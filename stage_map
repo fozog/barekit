@@ -1,0 +1,18 @@
+MAPFILE=$1
+
+DEMANGLE=../demangle/target/debug/demangle
+if [ ! -e $DEMANGLE ]; then
+	echo "Map not generated due to lack of $DEMANGLE"
+	exit 1
+fi
+
+cat $MAPFILE | egrep '^ 0001:' | tail +3 | while read line
+do
+	set $line
+	MANGLED=$2
+	RVA=$3
+	DEMANGLED=`$DEMANGLE $2`
+	echo $3 $DEMANGLED
+done | sort
+
+exit 0

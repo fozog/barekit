@@ -1,0 +1,31 @@
+#!/bin/bash
+
+FILE=$1
+STUB=$2
+NFILE=${FILE%.*}.afx
+
+file $1 | grep "PE32+ executable (EFI application) Aarch64, for MS Windows" > /dev/null 2>&1
+if [ $? -ne 0 ]; then
+	echo "This is not an UEFI application"
+	exit 1;
+fi
+
+TAG=$(dd if=$FILE skip=78 bs=1 count=39 2>/dev/null)
+
+if [ "$TAG" != "This program cannot be run in DOS mode." ]; then
+	echo "MSDOS stub not found"
+	exit 2
+fi
+
+#place the new STUB at the begining of the file
+#then adds the PE header and the rest of the file.
+#cp $STUB $NFILE
+#SIZE=`stat -c %s $STUB`
+#dd if=$FILE of=$NFILE bs=1 seek=$SIZE skip=120 conv=notrunc > /dev/null 2>&1
+
+# inplace update
+cp $FILE $NFILE
+#dd if=$STUB of=$NFILE bs=1 count=8  conv=notrunc 2> /dev/null
+#dd if=$STUB of=$NFILE bs=1 skip=64 seek=64  conv=notrunc 2> /dev/null
+dd if=$STUB of=$NFILE bs=1 count=60  conv=notrunc 2> /dev/null
+dd if=$STUB of=$NFILE bs=1 skip=64 seek=64  conv=notrunc 2> /dev/null

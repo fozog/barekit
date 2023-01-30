@@ -1,0 +1,85 @@
+#!/bin/sh
+
+TARGET=$1
+shift
+
+DEBUG=$1
+expr "$DEBUG" : "[-]*debug" >/dev/null 2>&1
+if [ $? -eq 0 ]; then
+	ENTER_DEBUG=1
+	shift
+fi
+
+PARAMS=$*
+
+LKVM=/home/ff/kvmtool
+
+set $(egrep  ^NATURE Makefile)
+NATURE=$3
+APP=target/aarch64-unknown-uefi/$NATURE/barekit.afx
+
+
+#-kernel qemu option requires some properties from the binary file
+# in some cases, the binary has no recognizable form
+# the following command allows to load an arbitray binary and set start address
+#qemu-system-aarch64 -nographic  -machine virt,accel=kvm -cpu host -serial mon:stdio -m 16M -device loader,file=<purebinary>,addr=0x40200000 -device loader,addr=0x40200000,cpu-num=0 
+
+case $TARGET in
+
+kvmtool)
+if [ "$ENTER_DEBUG" -eq "1" ]; then
+	DEBUG_TAG="--debug-single-step"
+fi
+$LKVM/lkvm run --mem 16 --console serial --enable-nisv --kernel $APP --params "$PARAMS" $DEBUG_TAG
+;;
+
+qemu-kvm)
+qemu-system-aarch64 -nographic  -machine virt,accel=kvm -cpu host -serial mon:stdio -m 16M -kernel $APP -append "$PARAMS"
+;;
+
+qemu)
+echo qemu-system-aarch64 -nographic  -machine virt -cpu cortex-a57 -serial mon:stdio -m 256M -kernel $APP -append "$PARAMS"
+qemu-system-aarch64 -nographic  -machine virt -cpu cortex-a57 -serial mon:stdio -m 256M -kernel $APP -append "$PARAMS" 
+;;
+
+qemu-uboot)
+if [ "$(uname -s)" != "Darwin" ]; then
+	../u-boot/tools/env/fw_setenv -c run_efi/uboot_env.config bootargs "$PARAMS"
+	truncate --size 64M run_efi/QEMU_UBOOT_ENV.fd
+	ACCEL=kvm
+else
+	ACCEL=hvf
+fi
+qemu-system-aarch64 -nographic -nodefaults -machine virt,accel=$ACCEL -cpu host -serial mon:stdio -m 256M \
+	-drive if=pflash,format=raw,readonly=on,file=run_efi/QEMU_UBOOT.fd \
+	-drive if=pflash,format=raw,file=run_efi/QEMU_UBOOT_ENV.fd \
+	-drive file=run_efi/disk.img,format=raw,if=virtio
+	;;
+
+qemu-tfa2)
+dd if=../arm-trusted-firmware/build/qemu/release/bl1.bin of=run_efi/flash.bin bs=4096 conv=notrunc > /dev/null 2>&1
+dd if=../arm-trusted-firmware/build/qemu/release/fip.bin of=run_efi/flash.bin seek=64 bs=4096 conv=notrunc > /dev/null 2>&1
+#need to have 1GB of RAM in the VM for TFA to work !!!
+qemu-system-aarch64 -nographic -nodefaults -machine virt,secure=on -cpu cortex-a72 -m 2G \
+	-chardev stdio,mux=on,id=char0 \
+	    -mon chardev=char0,mode=readline \
+	    -serial chardev:char0 \
+	-chardev file,id=char1,path=/tmp/secuart.log \
+	    -serial chardev:char1 \
+	-bios run_efi/flash.bin 
+	;;
+
+qemu-tfa1)
+dd if=../arm-trusted-firmware/build/qemu/release/bl1.bin of=run_efi/flash.bin bs=4096 conv=notrunc > /dev/null 2>&1
+dd if=../arm-trusted-firmware/build/qemu/release/fip.bin of=run_efi/flash.bin seek=64 bs=4096 conv=notrunc > /dev/null 2>&1
+#need to have 1GB of RAM in the VM for TFA to work !!!
+qemu-system-aarch64 -nographic -nodefaults -machine virt,secure=on -cpu cortex-a72 -m 2G \
+	-chardev stdio,mux=on,id=char0 \
+	    -mon chardev=char0,mode=readline \
+	    -serial chardev:char0 \
+	    -serial chardev:char0 \
+	-bios run_efi/flash.bin 
+	;;
+
+esac
+

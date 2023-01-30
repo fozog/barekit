@@ -1,0 +1,18 @@
+#! /bin/bash
+
+FILE=$1
+TARGET=$2
+
+MACHINE=$(uname -s)
+
+if [ "$MACHINE" == "Darwin" ]; then 
+
+OFFSET=$(objdump  -p $FILE | grep fileoff | cut -c11-)
+SIZE=$(objdump  -p $FILE | grep filesize | cut -c11-)
+dd if=$FILE of=$TARGET bs=1 skip=$OFFSET count=$SIZE > /dev/null 2>&1
+
+else
+
+objcopy -j .text -O binary  $FILE $TARGET
+
+fi
