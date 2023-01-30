@@ -1,0 +1,46 @@
+{
+  "abi-return-struct-as-int": true,
+  "allows-weak-linkage": false,
+  "arch": "aarch64",
+  "features" : "+strict-align,-neon,-fp-armv8",
+  "relocation-model": "pie",
+  "data-layout": "e-m:w-p:64:64-i32:32-i64:64-i128:128-n32:64-S128",
+  "debuginfo-kind": "pdb",
+  "disable-redzone": true,
+  "emit-debug-gdb-scripts": false,
+  "exe-suffix": ".efi",
+  "is-builtin": false,
+  "is-like-msvc": false,
+  "is-like-windows": true,
+  "linker": "rust-lld",
+  "linker-flavor": "lld-link",
+  "linker-is-gnu": false,
+  "lld-flavor": "link",
+  "llvm-target": "aarch64-unknown-windows",
+  "max-atomic-width": 128,
+  "os": "uefi",
+  "panic-strategy": "abort",
+  "pre-link-args": {
+    "lld-link": [
+      "/NOLOGO",
+      "/entry:entry",
+      "/subsystem:efi_application",
+      "/machine:arm64",
+      "/filealign:4096",
+      "/base:0",
+      "/map:barekit.map",
+      "/stack:16384",
+      "/heap:16384",
+      "/demangle"
+    ]
+  },
+  "singlethread": true,
+  "split-debuginfo": "packed",
+  "stack-probes": {
+    "kind": "call"
+  },
+  "supported-split-debuginfo": [
+    "packed"
+  ],
+  "target-pointer-width": "64"
+}

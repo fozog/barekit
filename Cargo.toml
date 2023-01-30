@@ -1,0 +1,23 @@
+[package]
+name = "barekit"
+version = "0.1.0"
+edition = "2021"
+
+[features]
+early_print = []
+
+[[bin]]
+name = "barekit"
+path = "src/rrt0.rs"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+peview = "0.2.1"
+#embedded-alloc = "0.5.0"
+#critical-section = "1.0"
+r-efi = "4.1.0"
+
+[dependencies.fdt-rs]
+version = "0.4"
+default-features = false
