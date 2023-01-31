@@ -125,3 +125,13 @@ same as for BL33 except you need to apply a patch:
     cd $HOME/workspace/barekit
     ./runon qemu-tfa1
 
+##Build and run for RPI4
+
+Create a bootable RPI4 64 bits image (use Raspberry PI Imager tool).
+copy barekit.afx in the FAT root directory
+update config.txt:
+
+    enable_uart=1
+    kernel=barekit.afx
+
+Boot
