@@ -1,0 +1,22 @@
+diff --git a/plat/qemu/common/qemu_bl2_setup.c b/plat/qemu/common/qemu_bl2_setup.c
+index be5587714..a863b8449 100644
+--- a/plat/qemu/common/qemu_bl2_setup.c
++++ b/plat/qemu/common/qemu_bl2_setup.c
+@@ -237,6 +237,7 @@ static int qemu_bl2_handle_post_image_load(unsigned int image_id)
+ 		bl_mem_params->ep_info.args.arg2 = ARM_PRELOADED_DTB_BASE;
+ 		bl_mem_params->ep_info.args.arg3 = 0;
+ #endif
++		bl_mem_params->ep_info.args.arg0 = (u_register_t)ARM_PRELOADED_DTB_BASE;
+ 		bl_mem_params->ep_info.spsr = qemu_get_spsr_for_bl32_entry();
+ 		break;
+ 
+diff --git a/services/spd/tlkd/tlkd.mk b/services/spd/tlkd/tlkd.mk
+index 56de0a642..a8c055fce 100644
+--- a/services/spd/tlkd/tlkd.mk
++++ b/services/spd/tlkd/tlkd.mk
+@@ -12,3 +12,5 @@ SPD_SOURCES		:=	services/spd/tlkd/tlkd_common.c		\
+ 				services/spd/tlkd/tlkd_helpers.S	\
+ 				services/spd/tlkd/tlkd_main.c		\
+ 				services/spd/tlkd/tlkd_pm.c
++
++NEED_BL32               :=      yes

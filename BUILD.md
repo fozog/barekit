@@ -112,3 +112,16 @@ Then each time you update barekit:
     make ARM_LINUX_KERNEL_AS_BL33=1 BL33=../barekit/target/aarch64-unknown-uefi/release/barekit.afx PLAT=qe
     cd -
     ./runon qemu-tfa1
+
+
+## Build and run for BL32
+
+same as for BL33 except you need to apply a patch:
+
+    cd $HOME/workspace/arm-trusted-firmware
+    git apply ../barekit/bl32.patch
+    make distclean
+    make SPD=tlkd ARM_LINUX_KERNEL_AS_BL33=1 BL33=../barekit/target/aarch64-unknown-uefi/release/barekit.afx BL32=../barekit/target/aarch64-unknown-uefi/release/barekit.afx PLAT=qemu all fip
+    cd $HOME/workspace/barekit
+    ./runon qemu-tfa1
+
