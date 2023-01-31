@@ -12,7 +12,7 @@ fi
 
 PARAMS=$*
 
-LKVM=/home/ff/kvmtool
+LKVM=$HOME/workspace/kvmtool
 
 set $(egrep  ^NATURE Makefile)
 NATURE=$3
