@@ -92,3 +92,23 @@ From now on you can just use
 
 to test the new compiled version. To exit Qemu, type CTRL-A x.
 
+## Build and install for BL33
+
+    cd $HOME/workspace
+    git clone https://github.com/ARM-software/arm-trusted-firmware.git
+    cd arm-trusted-firmware
+    git checkout -bv2.8.0 v2.8.0
+
+Assumes that barekit.afx is already built to be integrated in the fip
+
+    make ARM_LINUX_KERNEL_AS_BL33=1 BL33=../barekit/target/aarch64-unknown-uefi/release/barekit.afx PLAT=qemu all fip
+    cd ../barekit
+    ./runon qemu-tfa1
+
+Then each time you update barekit:
+
+    make
+    cd ../arm-trusted-firmware
+    make ARM_LINUX_KERNEL_AS_BL33=1 BL33=../barekit/target/aarch64-unknown-uefi/release/barekit.afx PLAT=qe
+    cd -
+    ./runon qemu-tfa1
