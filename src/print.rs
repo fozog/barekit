@@ -101,7 +101,7 @@ pub fn _early_print_s(format:&str, value: u64) {
 #[macro_export]
 #[cfg(not(feature = "early_print"))]
 macro_rules! early_prints {
-    ($a:expr,$b:expr) => ()
+    ($a:expr,$b:expr) => ({})
 }
 
 #[macro_export]
@@ -129,3 +129,4 @@ macro_rules! println {
         $crate::print::_print(format_args_nl!($($arg)*));
     })
 }
+
