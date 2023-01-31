@@ -30,7 +30,7 @@ kvmtool)
 if [ "$ENTER_DEBUG" -eq "1" ]; then
 	DEBUG_TAG="--debug-single-step"
 fi
-$LKVM/lkvm run --mem 16 --console serial --enable-nisv --kernel $APP --params "$PARAMS" $DEBUG_TAG
+$LKVM/lkvm run --mem 16 --console serial --kernel $APP --params "$PARAMS" $DEBUG_TAG
 ;;
 
 qemu-kvm)
