@@ -90,5 +90,5 @@ From now on you can just use
 	./run_efi/update_disk.sh
 	./runon qemu-uboot
 
-to test the new compiled version
+to test the new compiled version. To exit Qemu, type CTRL-A x.
 
