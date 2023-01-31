@@ -80,7 +80,7 @@ pub  fn rrt1_entry(platform: &mut Box<dyn PlatformOperations>) -> i64
                 Ok(dt) => fdt =dt,
                 Err(why) => {
                     match why {
-                        DevTreeError::InvalidParameter(p) => early_prints!("InvalidParameter\n", p.as_ptr() as u64),
+                        DevTreeError::InvalidParameter(_p) => early_prints!("InvalidParameter\n", _p.as_ptr() as u64),
                         DevTreeError::InvalidMagicNumber => early_prints!("InvalidMagicNumber\n", 0),
                         DevTreeError::InvalidOffset => early_prints!("InvalidOffset\n", 0),
                         DevTreeError::ParseError => early_prints!("ParseError\n", 0),
