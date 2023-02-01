@@ -18,6 +18,10 @@ use crate::print::_early_print_s;
 
 /* to pass DT formatted configuration information use:
     fiptool update fip.bin --tos-fw-config <rustee_config.dtb>
+
+    DT for secure world:
+    https://www.kernel.org/doc/Documentation/devicetree/bindings/arm/secure.txt
+
 */
 pub struct Platform<'a> {
     #[allow(dead_code)]

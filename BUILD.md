@@ -95,9 +95,11 @@ to test the new compiled version. To exit Qemu, type CTRL-A x.
 ## Build and install for BL33
 
     cd $HOME/workspace
-    git clone https://github.com/ARM-software/arm-trusted-firmware.git
+    git clone https://github.com/fozog/arm-trusted-firmware.git
     cd arm-trusted-firmware
-    git checkout -bv2.8.0 v2.8.0
+    git checkout -brusteed rusteed
+
+the rusteed branch is based on TFA v2.8.0, it adds rusteed SPD service so that we have a clean BL32 interface
 
 Assumes that barekit.afx is already built to be integrated in the fip
 
