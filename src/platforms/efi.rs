@@ -34,7 +34,7 @@ pub struct Platform<'a> {
     _image_handle:          efi::Handle,
     sys_tab:        *const efi::SystemTable,
     information:    PlatformInfo,
-    _dt:             Option<DeviceTree<'a>>
+    _dt:            Option<Box<DeviceTree<'a>>>
 }
 
 
@@ -80,6 +80,10 @@ impl<'a> PlatformOperations<'a> for Platform<'a> {
     fn can_return(&self) -> bool {
         // as we dont call exit boot service yet, this is always true
         true
+    }
+
+    fn set_devt(&'a mut self, devt: Option<Box<DeviceTree<'a>>>) {
+        self._dt = devt;
     }
 
 }

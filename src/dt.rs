@@ -259,6 +259,7 @@ impl<'a> DeviceTree<'a> {
         this
     }
 
+
 }
 
 /* the key issue is to make sure the scratchpad backend lives long enough.

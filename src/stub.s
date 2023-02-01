@@ -108,31 +108,29 @@ ImageBase:
 1:
 	// when entering "raw" (i.e. baremetal, BL32 or BL33 TFA payload)
 	// the execution will start at offset 0 and continue here.
-	// x0 is set by the loading entity to FDT pointer except for BL32 where it is set to 0
+	// x0 is set by the loading entity to FDT pointer 
+	// x1,, x2, x3 will be set by TFA or the loading entity
 	// let's make sure that
-	// - x1 is 0
-	// - x2 points to load address
-	// - x3 to end of image
+	// - x4 points to load address
+	// - x5 to end of image
 	
-		mov		x1,xzr
-        adrp    x2, 0
+		//mov		x1,xzr
+        adrp    x4, 0
 		
-        ldr     w10, [x2, #0x3C]
-        add     x10, x10, x2
+        ldr     w10, [x4, #0x3C]
+        add     x10, x10, x4
     // x10 now holds absolute address of PE header
         ldr     w11, [x10, #40]         //AddressOfEntryPoint
-        add     x11, x11, x2
+        add     x11, x11, x4
 
 	// place the stack at the end of image+SizeOfStackCommit
 	// first: get the end of image in x4
-    	ldr     w3, [x10, #80]         // SizeOfImage
-        add     x3, x3, x2
+    	ldr     w5, [x10, #80]         // SizeOfImage
+        add     x5, x5, x4
 	// then add the SizefOfStackReserve
         ldr     x12, [x10, #96]        // get SizefOfStackReserve
-        add     sp, x3, x12
+        add     sp, x5, x12
 		
-	// continue execution to the known entry point
-	// x0 = FDT, x1=0, x2= Load address, x3 = end of image
         br      x11
 
 	// loaded by an EFI entity, execution will start directly at the registered AddressOfEntryPoint

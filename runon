@@ -38,7 +38,7 @@ qemu-kvm)
 ;;
 
 qemu)
-	qemu-system-aarch64 -nographic  -machine virt -cpu cortex-a57 -serial mon:stdio -m 16M -kernel $APP -append "$PARAMS"
+	qemu-system-aarch64 -nographic  -machine virt -cpu cortex-a72 -serial mon:stdio -m 16M -kernel $APP -append "$PARAMS"
 ;;
 
 qemu-uboot)
@@ -60,9 +60,6 @@ qemu-tfa2)
 	if [ "$(uname -s)" != "Darwin" ]; then
 		truncate --size 64M run_efi/QEMU_UBOOT_ENV.fd
 		../u-boot/tools/env/fw_setenv -c run_efi/uboot_env.config bootargs "$PARAMS"
-		ACCEL=kvm
-	else
-		ACCEL=hvf
 	fi
 	truncate --size 64M run_efi/flash.bin
 	dd if=../arm-trusted-firmware/build/qemu/release/bl1.bin of=run_efi/flash.bin bs=4096 conv=notrunc > /dev/null 2>&1
@@ -84,9 +81,6 @@ qemu-tfa1)
 	if [ "$(uname -s)" != "Darwin" ]; then
 		truncate --size 64M run_efi/QEMU_UBOOT_ENV.fd
 		../u-boot/tools/env/fw_setenv -c run_efi/uboot_env.config bootargs "$PARAMS"
-		ACCEL=kvm
-	else
-		ACCEL=hvf
 	fi
 	truncate --size 64M run_efi/flash.bin
 	dd if=../arm-trusted-firmware/build/qemu/release/bl1.bin of=run_efi/flash.bin bs=4096 conv=notrunc > /dev/null 2>&1
@@ -100,6 +94,20 @@ qemu-tfa1)
 		-serial chardev:char0 \
 		-drive if=pflash,format=raw,readonly=on,file=run_efi/flash.bin \
 		-drive if=pflash,format=raw,file=run_efi/QEMU_UBOOT_ENV.fd \
+		-drive file=run_efi/disk.img,format=raw,if=virtio
+	;;
+
+qemu-el3)
+	truncate --size 64M run_efi/flash.bin
+	dd if=$APP of=run_efi/flash.bin bs=4096 conv=notrunc > /dev/null 2>&1
+	#need to have 1GB of RAM in the VM for TFA to work !!!
+	#https://elixir.bootlin.com/arm-trusted-firmware/v2.8/source/plat/qemu/qemu/include/platform_def.h#L181
+	qemu-system-aarch64 -nographic -nodefaults -machine virt,secure=on -cpu cortex-a72 -m 1G \
+		-chardev stdio,mux=on,id=char0 \
+		-mon chardev=char0,mode=readline \
+		-serial chardev:char0 \
+		-serial chardev:char0 \
+		-drive if=pflash,format=raw,readonly=on,file=run_efi/flash.bin \
 		-drive file=run_efi/disk.img,format=raw,if=virtio
 	;;
 

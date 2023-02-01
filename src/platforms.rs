@@ -16,12 +16,17 @@ use crate::println;
 use crate::print;
 use crate::ALLOC_SIZE;
 use crate::ALLOC_COUNT;
+use crate::early_prints;
 
 use crate::platforms;
+use crate::dt::DeviceTree;
 
+use fdt_rs::index::DevTreeIndexNode;
+use fdt_rs::prelude::PropReader;
+use fdt_rs::prelude::FallibleIterator;
 
-//#[cfg(feature = "early_print")]
-//use crate::print::_early_print_s;
+#[cfg(feature = "early_print")]
+use crate::print::_early_print_s;
 
 pub struct PlatformInfo {
     pub image_base:             u64,
@@ -52,6 +57,26 @@ impl Platform {
                 RuntimeContext::EFI             => Box::from(platforms::efi::Platform::new(information)),
             };
         platform
+    }
+
+    pub fn get_stdout<'a>(devt: &'a Box<DeviceTree<'a>>, base: &'a str) -> Option<DevTreeIndexNode<'a, 'a, 'a>> {
+        // now setup the console
+        early_prints!("console stuff\n",0);
+        let chosen_node= devt.get_node_by_name(base).unwrap();
+        early_prints!("chosen\n",0);
+        let stdout_prop = devt.get_prop_by_name(&chosen_node, "stdout-path");
+        let mut stdout = "serial0"; // lets have a default... (needed for RPI4 ;-)
+        if let Some(p) = stdout_prop {
+            early_prints!("stdout-path is set\n",0);
+            stdout = p.iter_str().next().unwrap().unwrap();
+            println!("stdout={}", stdout);
+            early_prints!("stdout-path=$\n", stdout.as_ptr() as u64);
+        }
+        else {
+            early_prints!("stdout-path is not set, trying default=serial0\n",0);
+        }
+
+        devt.get_node_by_path(stdout)
     }
 
 }
@@ -85,6 +110,11 @@ pub trait PlatformOperations<'a> {
     }
 
     fn get_info(&self) -> &PlatformInfo;
+    
+    fn set_devt(&'a mut self, devt: Option<Box<DeviceTree<'a>>>);
 
+    fn is_secure(&self) -> bool {
+        return false;
+    }
 
 }

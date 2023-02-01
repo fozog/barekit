@@ -4,6 +4,9 @@
     
 */
 
+use alloc::vec::Vec;
+use alloc::boxed::Box;
+
 use crate::PlatformOperations;
 use crate::PlatformInfo;
 use crate::dt::DeviceTree;
@@ -13,14 +16,11 @@ use crate::early_prints;
 #[cfg(feature = "early_print")]
 use crate::print::_early_print_s;
 
-use alloc::vec::Vec;
-
-
 
 pub struct Platform<'a> {
     fdt_address:    u64,
     information:    PlatformInfo,
-    _dt:             Option<DeviceTree<'a>>,
+    _dt:            Option<Box<DeviceTree<'a>>>,
     _dt_scratchpad:  Option<Vec<u8>>
 }
 
@@ -41,6 +41,10 @@ impl<'a> PlatformOperations<'a> for Platform<'a> {
 
     fn get_fdt_address(&self) -> Option<u64> {
         Some(self.fdt_address)
+    }
+
+    fn set_devt(&'a mut self, devt: Option<Box<DeviceTree<'a>>>) {
+        self._dt = devt;
     }
 
 }

@@ -4,6 +4,8 @@
     
 */
 
+use alloc::boxed::Box;
+
 use crate::PlatformOperations;
 use crate::PlatformInfo;
 use crate::dt::DeviceTree;
@@ -16,7 +18,7 @@ use crate::print::_early_print_s;
 pub struct Platform<'a> {
     fdt_address:    u64,
     information:    PlatformInfo,
-    _dt:             Option<DeviceTree<'a>>
+    _dt:            Option<Box<DeviceTree<'a>>>
 
 }
 
@@ -42,6 +44,14 @@ impl<'a> PlatformOperations<'a> for Platform<'a> {
 
     fn get_info(&self) -> &PlatformInfo {
         &self.information
+    }
+
+    fn set_devt(&'a mut self, devt: Option<Box<DeviceTree<'a>>>) {
+        self._dt = devt;
+    }
+
+    fn is_secure(&self) -> bool {
+        return true;
     }
 
 }

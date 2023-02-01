@@ -310,7 +310,7 @@ const BOOT_HEAP_SIZE : usize = 512*1024 ;
 
 #[export_name = "entry"]
 #[allow(const_item_mutation)]
-pub extern "C"  fn rrt0_entry(x0: u64, x1: u64, x2: u64, x3: u64) -> i64 {
+pub extern "C"  fn rrt0_entry(x0: u64, x1: u64, x2: u64, x3: u64, x4: u64, x5: u64) -> i64 {
 
     /* this block MUST be the first things to do. you may change it if you 
        fully undestand PE/COFF relocation stuff and the Allocator internals. */
@@ -321,22 +321,33 @@ pub extern "C"  fn rrt0_entry(x0: u64, x1: u64, x2: u64, x3: u64) -> i64 {
         early_prints!("x1=%\n", x1);
         early_prints!("x2=%\n", x2);
         early_prints!("x3=%\n", x3);
-
-        if x1 == 0 {
-            if x2 > 0 && x3 > 0{
-                //TODO: evaluate the security state and Exception Level
+        early_prints!("x4=%\n", x4);
+        early_prints!("x5=%\n", x5);
+        let mut exception_level: u64;
+        unsafe {
+            asm!("mrs {}, CurrentEL", out(reg) exception_level);
+        }
+        exception_level >>=2;
+        early_prints!("EL=%\n", exception_level);
+        if exception_level == 3 {
+            rc = RuntimeContext::BareMetalEL3;
+        }
+        else if exception_level == 2 {
+            rc = RuntimeContext::BaremetalEL2;
+        }
+        else {
+            if x1 == 0xF1F0 {
                 rc = RuntimeContext::BaremetalSEL1
-            }
-        } else {
-            rc = RuntimeContext::EFI;
-
+            } else if x1 !=0 {
+                rc = RuntimeContext::EFI
+            } 
         }
 
         if rc != RuntimeContext::EFI {
             // this is bare metal entry
             early_prints!("Baremetal entry, self relocating...", 0);
-            let image_base = x2;
-            let image_end = x3; 
+            let image_base = x4;
+            let image_end = x5; 
             unsafe {
                 let _res = relocate(image_base as usize, image_end as usize);
             }
@@ -384,8 +395,8 @@ pub extern "C"  fn rrt0_entry(x0: u64, x1: u64, x2: u64, x3: u64) -> i64 {
         }
     }
     else {
-        load_address = x2;
-        end_of_image = x3;
+        load_address = x4;
+        end_of_image = x5;
         unsafe {
             asm!(
                 "mov {x}, sp",
@@ -418,7 +429,7 @@ pub extern "C"  fn rrt0_entry(x0: u64, x1: u64, x2: u64, x3: u64) -> i64 {
     log::set_target(Some(Box::new(tty_earlydev)));
     early_prints!("done.\n", unsafe {TTY_BUFFER.as_ptr() as u64});
 
-    println!("rrt0_entry\n");
+    println!("rrt0 boot heap ready\n");
 
     println!("rrt0_entry: about to create the platform\n");
 
@@ -441,6 +452,6 @@ pub extern "C"  fn rrt0_entry(x0: u64, x1: u64, x2: u64, x3: u64) -> i64 {
     platform.set_boot_tty();
 
     println!("calling rrt1_entry\n");
-    rrt1_entry(&mut platform)
+    rrt1_entry(platform)
 
 }

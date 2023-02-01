@@ -9,7 +9,7 @@ use alloc::boxed::Box;
 use crate::PlatformOperations;
 use crate::println;
 
-pub fn run(_platform:&mut Box<dyn PlatformOperations>) -> i64 {
+pub fn run(_platform:&Box<dyn PlatformOperations>) -> i64 {
     println!("Hello World!");
     return 0;
 }
