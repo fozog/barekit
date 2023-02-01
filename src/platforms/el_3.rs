@@ -26,7 +26,8 @@ impl<'a> Platform<'a>  {
 
     pub fn new(information: PlatformInfo) -> Self {
         early_prints!("Creating EL3 platform\n", 0);
-        Self { fdt_address: information.x0_at_startup, information, _dt: None } 
+        // make sure it can work on QEMU
+        Self { fdt_address: 0x40000000, information, _dt: None } 
     }
 
 }
