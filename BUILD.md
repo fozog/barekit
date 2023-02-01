@@ -125,6 +125,14 @@ same as for BL33 except you need to apply a patch:
     cd $HOME/workspace/barekit
     ./runon qemu-tfa1
 
+alternatively you can use U-Boot as BL33 with barekit as BL32 and EFI payload:
+
+    cd $HOME/workspace/arm-trusted-firmware
+    make distclean
+    make SPD=tlkd BL33=../u-boot/u-boot-nodtb.bin BL32=../barekit/target/aarch64-unknown-uefi/release/barekit.afx PLAT=qemu all fip
+    cd $HOME/workspace/barekit
+    ./runon qemu-tfa1
+
 ## Build and run for RPI4
 
 Create a bootable RPI4 64 bits image (use Raspberry PI Imager tool).
