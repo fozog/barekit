@@ -17,6 +17,7 @@ LKVM=$HOME/workspace/kvmtool
 set $(egrep  ^NATURE Makefile)
 NATURE=$3
 APP=target/aarch64-unknown-uefi/$NATURE/barekit.afx
+EL3_STUB=target/aarch64-unknown-uefi/copy_to_secmem.bin
 
 
 #-kernel qemu option requires some properties from the binary file
@@ -98,14 +99,15 @@ qemu-tfa1)
 	;;
 
 qemu-el3)
-	#need to have 1GB of RAM in the VM for TFA to work !!!
-	#https://elixir.bootlin.com/arm-trusted-firmware/v2.8/source/plat/qemu/qemu/include/platform_def.h#L181
-	qemu-system-aarch64 -nographic -nodefaults -machine virt,secure=on -cpu cortex-a72 -m 1G \
+	truncate --size 64M run_efi/flash.bin
+	dd if=$EL3_STUB of=run_efi/flash.bin bs=4096 conv=notrunc > /dev/null  2>&1
+	dd if=$APP of=run_efi/flash.bin seek=1 bs=4096 conv=notrunc > /dev/null 2>&1
+	qemu-system-aarch64 -nographic -nodefaults -machine virt,secure=on -cpu cortex-a72 -m 64M \
 		-chardev stdio,mux=on,id=char0 \
 		-mon chardev=char0,mode=readline \
 		-serial chardev:char0 \
 		-serial chardev:char0 \
-		-device loader,file=$APP,addr=0x40200000 -device loader,addr=0x40200000,cpu-num=0 
+		-drive if=pflash,format=raw,readonly=on,file=run_efi/flash.bin
 	;;
 
 esac
