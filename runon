@@ -33,7 +33,6 @@ stage_el3_flash() {
 	# update size of payload in the stub
 	set $(wc -c $APP)
 	v=$(printf "%08x" $1)
-echo $v
 	echo -n -e "\\x${v:6:2}\\x${v:4:2}\\x${v:2:2}\\x${v:0:2}" | dd of=target/aarch64-unknown-uefi/copy_to_secmem.bin bs=4 seek=1 conv=notrunc > /dev/null 2>&1
 	#update the secure memory base address in the stub
 	v=$(printf "%016x" $SECMEM_BASE)
