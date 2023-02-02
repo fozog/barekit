@@ -113,6 +113,7 @@ ImageBase:
 	// let's make sure that
 	// - x4 points to load address
 	// - x5 to end of image
+	// sp is set to SizefOfStackReserve bytes above end of image
 	
 		//mov		x1,xzr
         adrp    x4, 0
