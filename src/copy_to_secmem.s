@@ -17,6 +17,8 @@ sec_mem_base:
 
 1:
     adrp    x4, 0
+    // the payload is assumed to be at offset 4096
+    // if you want to change it, change also runon script 
     add     x1, x4, #4096
     ldr     x0, [x4, #8]
     mov     x5, x0

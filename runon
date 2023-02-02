@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 TARGET=$1
 shift
@@ -24,6 +24,24 @@ EL3_STUB=target/aarch64-unknown-uefi/copy_to_secmem.bin
 # in some cases, the binary has no recognizable form
 # the following command allows to load an arbitray binary and set start address
 #qemu-system-aarch64 -nographic  -machine virt,accel=kvm -cpu host -serial mon:stdio -m 16M -device loader,file=<purebinary>,addr=0x40200000 -device loader,addr=0x40200000,cpu-num=0 
+
+stage_el3_flash() {
+
+	FLASH=$1
+	SECMEM_BASE=$2
+	truncate --size 64M $FLASH
+	# update size of payload in the stub
+	v=$(printf "%08x" $(stat -c '%s' $APP))
+	echo -n -e "\\x${v:6:2}\\x${v:4:2}\\x${v:2:2}\\x${v:0:2}" | dd of=target/aarch64-unknown-uefi/copy_to_secmem.bin bs=4 seek=1 conv=notrunc > /dev/null 2>&1
+	#update the secure memory base address in the stub
+	v=$(printf "%016x" $SECMEM_BASE)
+	echo -n -e "\\x${v:14:2}\\x${v:12:2}\\x${v:10:2}\\x${v:8:2}\\x${v:6:2}\\x${v:4:2}\\x${v:2:2}\\x${v:0:2}" | dd of=target/aarch64-unknown-uefi/copy_to_secmem.bin bs=8 seek=1 conv=notrunc > /dev/null 2>&1
+	#place the stub at the begining of the flash
+	dd if=$EL3_STUB of=$FLASH bs=4096 conv=notrunc > /dev/null  2>&1
+	#place the payload at offset 4096
+	dd if=$APP of=$FLASH seek=1 bs=4096 conv=notrunc > /dev/null 2>&1
+ 
+}
 
 case $TARGET in
 
@@ -99,9 +117,7 @@ qemu-tfa1)
 	;;
 
 qemu-el3)
-	truncate --size 64M run_efi/flash.bin
-	dd if=$EL3_STUB of=run_efi/flash.bin bs=4096 conv=notrunc > /dev/null  2>&1
-	dd if=$APP of=run_efi/flash.bin seek=1 bs=4096 conv=notrunc > /dev/null 2>&1
+	stage_el3_flash run_efi/flash.bin 0xe000000
 	qemu-system-aarch64 -nographic -nodefaults -machine virt,secure=on -cpu cortex-a72 -m 64M \
 		-chardev stdio,mux=on,id=char0 \
 		-mon chardev=char0,mode=readline \
