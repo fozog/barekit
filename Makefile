@@ -1,5 +1,5 @@
 APPNAME := barekit
-NATURE := release
+NATURE := debug
 #FEATURES := --features early_print
 
 ifeq ($(NATURE),release)

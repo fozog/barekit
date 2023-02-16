@@ -65,6 +65,23 @@ pub extern "C"  fn rrt0_entry(x0: u64, x1: u64, x2: u64, x3: u64, x4: u64, x5: u
 
     /* this block MUST be the first things to do. you may change it if you 
        fully undestand PE/COFF relocation stuff and the Allocator internals. */
+    /*
+    Test block for SoC simulation in hvftool and kvmtool
+    let mut _vbar_el1: u64 = 0x1234;
+    unsafe {
+        //asm!("msr vbar_el1, {}", in(reg) _vbar_el1);
+        //asm!("msr sctlr_el2, {}", in(reg) _vbar_el1);
+        //asm!("msr ID_AA64PFR0_EL1, {}", in(reg) _vbar_el1);
+        //asm!("mrs {}, ID_AA64PFR0_EL1", out(reg) _vbar_el1);
+        //asm!("msr ttbr1_el1, {}", in(reg) _vbar_el1);
+        //asm!("smc #1");
+        //asm!("hvc #1");
+        //asm!("tlbi alle1");
+        //asm!("wfe");
+        //asm!("wfi");
+        //asm!("ldp x0, x1, [x2]");
+    }
+    */
     let mut rc = RuntimeContext::BareMetalEL1;
     {
         early_prints!("\n\n\n-------------------------------------------------\nrrt0_entry()\n", 0);
