@@ -12,7 +12,7 @@ fi
 
 PARAMS=$*
 
-LKVM=$HOME/workspace/kvmtool
+LKVM=$HOME/kvmtool
 
 set $(egrep  ^NATURE Makefile)
 NATURE=$3
@@ -50,7 +50,7 @@ kvmtool)
 	if [ "$ENTER_DEBUG" -eq "1" ]; then
 		DEBUG_TAG="--debug-single-step"
 	fi
-	$LKVM/lkvm run --mem 16 --console serial --kernel $APP --params "$PARAMS" $DEBUG_TAG
+	$LKVM/lkvm run --mem 64 -c 1 --console serial --kernel $APP --params "$PARAMS" $DEBUG_TAG --enable-raw
 ;;
 
 qemu-kvm)
@@ -61,6 +61,21 @@ qemu)
 	qemu-system-aarch64 -nographic  -machine virt -cpu cortex-a72 -serial mon:stdio -m 16M -kernel $APP -append "$PARAMS"
 ;;
 
+qemu-edk2)
+	if [ "$(uname -s)" != "Darwin" ]; then
+		truncate --size 64M run_efi/QEMU_UBOOT_ENV.fd
+		../u-boot/tools/env/fw_setenv -c run_efi/uboot_env.config bootargs "$PARAMS"
+		ACCEL=kvm
+	else
+		ACCEL=hvf
+	fi
+	#minimum of 64M to initialize the EFI subsystem
+	qemu-system-aarch64 -nographic -nodefaults -machine virt -cpu cortex-a72 -serial mon:stdio -m 1G \
+		-drive if=pflash,format=raw,readonly=on,file=/usr/share/AAVMF/AAVMF_CODE.fd \
+		-drive if=pflash,format=raw,file=run_efi/AAVMF_VARS.fd \
+		-drive file=run_efi/disk.img,format=raw,if=virtio
+	;;
+
 qemu-uboot)
 	if [ "$(uname -s)" != "Darwin" ]; then
 		truncate --size 64M run_efi/QEMU_UBOOT_ENV.fd
@@ -70,7 +85,7 @@ qemu-uboot)
 		ACCEL=hvf
 	fi
 	#minimum of 64M to initialize the EFI subsystem
-	qemu-system-aarch64 -nographic -nodefaults -machine virt,accel=$ACCEL -cpu host -serial mon:stdio -m 64M \
+	qemu-system-aarch64 -nographic -nodefaults -machine virt,accel=kvm -cpu host -serial mon:stdio -m 64M \
 		-drive if=pflash,format=raw,readonly=on,file=run_efi/QEMU_UBOOT.fd \
 		-drive if=pflash,format=raw,file=run_efi/QEMU_UBOOT_ENV.fd \
 		-drive file=run_efi/disk.img,format=raw,if=virtio

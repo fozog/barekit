@@ -5,6 +5,8 @@
 */
 
 use alloc::boxed::Box;
+use r_efi::efi::Status;
+use r_efi::efi::RESET_COLD;
 
 use crate::PlatformOperations;
 use crate::PlatformInfo;
@@ -84,6 +86,17 @@ impl<'a> PlatformOperations<'a> for Platform<'a> {
 
     fn set_devt(&'a mut self, devt: Option<Box<DeviceTree<'a>>>) {
         self._dt = devt;
+    }
+
+    fn get_name(&self) -> &str {
+        "EFI"
+    }
+
+    fn stop(&self) {
+        let st = unsafe {&*(self.sys_tab)};
+        unsafe {
+            ((*(st.runtime_services)).reset_system)(RESET_COLD, Status::from_usize(0), 0, 0 as *mut core::ffi::c_void);
+        }
     }
 
 }

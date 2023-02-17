@@ -101,7 +101,12 @@ pub extern "C"  fn rrt0_entry(x0: u64, x1: u64, x2: u64, x3: u64, x4: u64, x5: u
             rc = RuntimeContext::BareMetalEL3;
         }
         else if exception_level == 2 {
-            rc = RuntimeContext::BaremetalEL2;
+            if x1 != 0 {
+                rc = RuntimeContext::EFI;
+            }
+            else {
+                rc = RuntimeContext::BaremetalEL2;
+            }
         }
         else {
             if x1 == 0xF1F0 {
@@ -145,7 +150,7 @@ pub extern "C"  fn rrt0_entry(x0: u64, x1: u64, x2: u64, x3: u64, x4: u64, x5: u
             end_of_image = (end_of_image + (EFI_PAGE_SIZE - 1)) & !EFI_PAGE_MASK;
             let mut heapbase : PhysicalAddress = 0;
             let heapptr: *mut PhysicalAddress= &mut heapbase;
-            let r = (boot_services.allocate_pages)(ALLOCATE_ANY_PAGES, LOADER_DATA, BOOT_HEAP_SIZE / EFI_PAGE_SIZE as usize, heapptr);
+        let r = (boot_services.allocate_pages)(ALLOCATE_ANY_PAGES, LOADER_DATA, BOOT_HEAP_SIZE / EFI_PAGE_SIZE as usize, heapptr);
             if r.is_error() {
                 early_prints!("Could not allocated HEAP\n", 0);
                 return -1;

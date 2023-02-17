@@ -109,6 +109,10 @@ pub trait PlatformOperations<'a> {
         loop{}
     }
 
+    fn get_name(&self) -> &str {
+        "baremetal"
+    }
+    
     fn get_info(&self) -> &PlatformInfo;
     
     fn set_devt(&'a mut self, devt: Option<Box<DeviceTree<'a>>>);

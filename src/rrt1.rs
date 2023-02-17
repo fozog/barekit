@@ -50,7 +50,7 @@ pub  fn rrt1_entry(platform: Box<dyn PlatformOperations>) -> i64
 
     let information = platform.get_info();
 
-    println!(r#"Hello from Rust Runtime phase 1."#);
+    println!(r#"Hello from Rust Runtime phase 1: {}."#, platform.get_name());
     println!("    Load address  = {:#x}", information.image_base);
     println!("    End of image  = {:#x}", information.image_end);
     println!("    End of stack  = {:#x}", information.boot_stack_top);
@@ -68,9 +68,11 @@ pub  fn rrt1_entry(platform: Box<dyn PlatformOperations>) -> i64
     }
 
     early_prints!("FDT @%\n", fdt);
+
     if fdt == 0 {
-        panic!("No FDT");
+        early_prints!("Assume ACPI\n", 0);
     }
+    else {
 
     let devt: Box<DeviceTree> = Box::new(unsafe {
 
@@ -178,6 +180,7 @@ pub  fn rrt1_entry(platform: Box<dyn PlatformOperations>) -> i64
     let prev = log::get_unprinted();
     log::set_target(tty);
     println!("{}", &prev);
+    }
 
     #[allow(unused_assignments)]
     let mut result : i64 = 0;
@@ -201,7 +204,8 @@ pub  fn rrt1_entry(platform: Box<dyn PlatformOperations>) -> i64
         // never reached    
     }
     
-    // never return from, just keep the compiler happy
-    return result;
+    unsafe {
+        core::hint::unreachable_unchecked()
+    }
 
 }

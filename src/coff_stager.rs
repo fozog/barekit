@@ -8,9 +8,6 @@ use peview::dir::{RelocationHead};
 use peview::header::{DosHeader, NtHeader, SectionHeader, FileHeader, SectionFlags};
 
 
-#[cfg(feature = "early_print")]
-use crate::print::_early_print_s;
-
 /*
 CRITICAL INFORMATION ON PE/COFF to understand memory layout and information..
 
