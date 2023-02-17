@@ -7,15 +7,11 @@
 use alloc::boxed::Box;
 use core::arch::asm;
 use core::arch::global_asm;
-use alloc::vec::Vec;
 
 use crate::PlatformOperations;
 
 use crate::println;
 
-use crate::early_prints;
-#[cfg(feature = "early_print")]
-use crate::print::_early_print_s;
 
 /*
   320 |        |        |
@@ -48,34 +44,47 @@ use crate::print::_early_print_s;
  */
 global_asm!("
 exception_table:
+
     sub     sp, sp, #0x150
     stp     x0, x1, [sp]
-    isb
+
     mov     w0, #0x9000000
     mov     w1, #0x21
     strb    w1, [x0]
     dsb sy
     isb
-    mov     x1, #0
-    b       trampoline
+
+    adr     x1, trampoline
+    adr     x0, reloc_offset
+    ldr     x0, [x0]
+    sub     x1, x1, x0
+
+    mov     x0, #1
+    br      x1 // trampoline
     
+    reloc_offset:
+    .quad   0
+
 . = exception_table + 0x200
     sub     sp, sp, #0x150
     stp     x0, x1, [sp]
-    isb
+
     mov     w0, #0x9000000
-    mov     w1, #0x22
-    //strb    w1, [x0]
+    mov     w1, #0x21
+    strb    w1, [x0]
     dsb sy
     isb
-    mov     x1, #1
-    b       trampoline
+
+    adr     x1, trampoline
+    adr     x0, reloc_offset
+    ldr     x0, [x0]
+    sub     x1, x1, x0
+
+    mov     x0, #1
+    br      x1 // trampoline
 
 
 . = exception_table + 0x800
-
-reloc_offset:
-    .quad   0
 
 trampoline:
     stp     x2, x3, [sp, #16]
@@ -106,23 +115,21 @@ trampoline:
     stp     x29, x22, [sp, #304]                                                                                               
     add     x29, sp, #304
 
-    mov     w0, #0x9000000
-    add     x1, x1, #0x30
-    strb    w1, [x0]
+    mov     w4, #0x9000000
+    add     x0, x0, #0x30
+    strb    w0, [x4]
     dsb sy
     isb
 
-    adr     x8, handle_exception
-    adr     x3, reloc_offset
-    ldr     x3, [x3]
-    sub     x8, x8, x3
+    mov     x1, x22
 
-    br       x8
+    bl      handle_exception
 
     msr     daifset, #0xf
 
     #restore returning environment
     ldp     x21, x22, [sp, #256]
+    
     # override return address with value returned by handle_exception
     msr     elr_el1, x0
     msr     spsr_el1, x23
@@ -148,89 +155,56 @@ trampoline:
 
     eret
 
-test:
-adr     x2, handle_exception
-adr     x3, reloc_offset
-ldr     x3, [x3]
-sub     x0, x2, x3
-ret
-
 ");
 
 extern "C" {
     fn exception_table() -> !;
     fn reloc_offset() -> !;
-    fn test() -> u64;
 }
 
-static mut previous_vbar: u64 = 0;
+static mut PREVIOUS_VBAR: u64 = 0;
 
 #[export_name = "handle_exception"]
-extern "C" fn handle_exception() -> u64 {
-    let mut elr_el1 : u64;
-    unsafe {
-        asm!("msr VBAR_EL1, {}", in(reg) previous_vbar);
-        asm!("mrs {}, ELR_EL1", out(reg) elr_el1);
-    }
-    return elr_el1;
+extern "C" fn handle_exception(_tag: u64, elr_el1:u64) -> u64 {
+    return elr_el1 + 4;
 }
 
-#[repr(align(0x1000))]
-struct AlignedBuffer {
-    buffer : [u8; 0xa00]
-}
-
-static mut  RW_EXCEPTION_TABLE : AlignedBuffer = AlignedBuffer{buffer : [0; 0xa00]};
-
-pub fn run(platform:&Box<dyn PlatformOperations>) -> i64 {
+pub fn run(_platform:&Box<dyn PlatformOperations>) -> i64 {
     println!("ID registers at startup\n");
     
-    let mut barekit_vbar : u64;
+    let  barekit_vbar : u64;
 
     unsafe {
-        asm!("mrs {}, VBAR_EL1", out(reg) previous_vbar);
+        asm!("mrs {}, VBAR_EL1", out(reg) PREVIOUS_VBAR);
         barekit_vbar = exception_table as u64;
     }
 
-
     unsafe {
-
         // kvmtool sets VBAR to a special value 
         //TODO: kvmtool to set it to (cached value)
-        if previous_vbar != 0 && previous_vbar != 0xf0000000 {
-            
+        if PREVIOUS_VBAR != 0 && PREVIOUS_VBAR != 0xf0000000 {
+
             let offset = reloc_offset as *mut u64;
-            *offset = RW_EXCEPTION_TABLE.buffer.as_ptr() as u64 - barekit_vbar;
+            *offset = PREVIOUS_VBAR - barekit_vbar;
             println!("reloc_offset set to {:#x}", *offset);
 
-                let mut source = previous_vbar as *const u64;
-            let mut target =  RW_EXCEPTION_TABLE.buffer.as_mut_ptr() as *mut u64;
+            let mut target = PREVIOUS_VBAR as *mut u64;
+            let mut source =  barekit_vbar as *const u64;
             println!("Copy barekit handler from {:#x} to {:#x}", source as u64, target as u64);
             let mut i:u32 = 0;
-            while i < (0x800 / 8)
+            while i < (0x80 / 8)
             {
                 *target = *source;
                 target = target.add(1);
                 source = source.add(1);
                 i+=1;
             }
-            // now point source to trampoline code
             source = exception_table as *const u64;
-            source = source.add(0x800/8);
+            source = source.add(0x200/8);
+            target = PREVIOUS_VBAR as *mut u64;
+            target = target.add(0x200/8);
+            println!("Copy barekit handler from {:#x} to {:#x}", source as u64, target as u64);
             i = 0;
-            while i < 0x200 / 8
-            {
-                *target = *source;
-                target = target.add(1);
-                source = source.add(1);
-                i+=1;
-            }
-
-            // now copy the barekit syncchronous handlers
-            source = exception_table as *const u64;
-            target =  RW_EXCEPTION_TABLE.buffer.as_mut_ptr() as *mut u64;
-
-            i=0;
             while i < 0x80 / 8
             {
                 *target = *source;
@@ -238,26 +212,11 @@ pub fn run(platform:&Box<dyn PlatformOperations>) -> i64 {
                 source = source.add(1);
                 i+=1;
             }
-            target = target.add(0x200 /8);
-            source = source.add(0x200 /8);
-            i=0;
-            while i < 0x80 / 8
-            {
-                *target = *source;
-                target = target.add(1);
-                source = source.add(1);
-                i+=1;
-            }
-
-            barekit_vbar = RW_EXCEPTION_TABLE.buffer.as_mut_ptr() as u64;
-        
         }
-
-        println!("Setting VBAR_EL1 to {:#x}", barekit_vbar);
-        asm!("msr VBAR_EL1, {}", in(reg) barekit_vbar);
-
-        println!("test={:#x}", test());
-        println!("handle_exception={:#x}", handle_exception as u64);
+        else {
+            println!("Setting VBAR_EL1 to {:#x}", barekit_vbar);
+            asm!("msr VBAR_EL1, {}", in(reg) barekit_vbar);
+        }
 
     }
 
@@ -555,8 +514,8 @@ pub fn run(platform:&Box<dyn PlatformOperations>) -> i64 {
         
     unsafe {
         // this is for EFI to properly execute run/boot time services
-        println!("Restoring VBAR_EL1 to {:#x}", previous_vbar);
-        asm!("msr VBAR_EL1, {}", in(reg) previous_vbar);
+        println!("Restoring VBAR_EL1 to {:#x}", PREVIOUS_VBAR);
+        asm!("msr VBAR_EL1, {}", in(reg) PREVIOUS_VBAR);
     }
     return 0;
 }
