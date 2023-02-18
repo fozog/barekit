@@ -48,32 +48,20 @@ exception_table:
     sub     sp, sp, #0x150
     stp     x0, x1, [sp]
 
-    mov     w0, #0x9000000
-    mov     w1, #0x21
-    strb    w1, [x0]
-    dsb sy
-    isb
-
-    adr     x1, trampoline
     adr     x0, reloc_offset
     ldr     x0, [x0]
+    adr     x1, trampoline
     sub     x1, x1, x0
 
-    mov     x0, #1
+    mov     x0, #0
     br      x1 // trampoline
     
-    reloc_offset:
+reloc_offset:
     .quad   0
 
 . = exception_table + 0x200
     sub     sp, sp, #0x150
     stp     x0, x1, [sp]
-
-    mov     w0, #0x9000000
-    mov     w1, #0x21
-    strb    w1, [x0]
-    dsb sy
-    isb
 
     adr     x1, trampoline
     adr     x0, reloc_offset
@@ -179,6 +167,7 @@ pub fn run(_platform:&Box<dyn PlatformOperations>) -> i64 {
         barekit_vbar = exception_table as u64;
     }
 
+
     unsafe {
         // kvmtool sets VBAR to a special value 
         //TODO: kvmtool to set it to (cached value)
@@ -186,7 +175,7 @@ pub fn run(_platform:&Box<dyn PlatformOperations>) -> i64 {
 
             let offset = reloc_offset as *mut u64;
             *offset = PREVIOUS_VBAR - barekit_vbar;
-            println!("reloc_offset set to {:#x}", *offset);
+            println!("reloc_offset set to {:#x}", PREVIOUS_VBAR - barekit_vbar);
 
             let mut target = PREVIOUS_VBAR as *mut u64;
             let mut source =  barekit_vbar as *const u64;
