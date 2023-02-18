@@ -11,6 +11,7 @@ use core::arch::global_asm;
 use crate::PlatformOperations;
 
 use crate::println;
+use crate::print;
 
 
 /*
@@ -47,13 +48,15 @@ exception_table:
 
     sub     sp, sp, #0x150
     stp     x0, x1, [sp]
+    stp     x2, x3, [sp, #16]
 
     adr     x0, reloc_offset
     ldr     x0, [x0]
+    adr     x1, sync_excetion_same_el_sp0
+    sub     x2, x1, x0
     adr     x1, trampoline
     sub     x1, x1, x0
 
-    mov     x0, #0
     br      x1 // trampoline
     
 reloc_offset:
@@ -62,20 +65,21 @@ reloc_offset:
 . = exception_table + 0x200
     sub     sp, sp, #0x150
     stp     x0, x1, [sp]
+    stp     x2, x3, [sp, #16]
 
-    adr     x1, trampoline
     adr     x0, reloc_offset
     ldr     x0, [x0]
+    adr     x1, sync_excetion_same_el_spx
+    sub     x2, x1, x0
+    adr     x1, trampoline
     sub     x1, x1, x0
 
-    mov     x0, #1
     br      x1 // trampoline
 
 
 . = exception_table + 0x800
 
 trampoline:
-    stp     x2, x3, [sp, #16]
     stp     x4, x5, [sp, #32]
     stp     x6, x7, [sp, #48]
     stp     x8, x9, [sp, #64]
@@ -103,15 +107,11 @@ trampoline:
     stp     x29, x22, [sp, #304]                                                                                               
     add     x29, sp, #304
 
-    mov     w4, #0x9000000
-    add     x0, x0, #0x30
-    strb    w0, [x4]
-    dsb sy
-    isb
 
-    mov     x1, x22
+    mov     x8, x2               // get the handler address in x8
+    mov     x0, x22             // get elr_el1 in x0
 
-    bl      handle_exception
+    blr     x8
 
     msr     daifset, #0xf
 
@@ -152,8 +152,18 @@ extern "C" {
 
 static mut PREVIOUS_VBAR: u64 = 0;
 
-#[export_name = "handle_exception"]
-extern "C" fn handle_exception(_tag: u64, elr_el1:u64) -> u64 {
+#[export_name = "sync_excetion_same_el_sp0"]
+extern "C" fn sync_excetion_same_el_sp0(elr_el1:u64) -> u64 {
+    return elr_el1 + 4;
+}
+
+#[export_name = "sync_excetion_same_el_spx"]
+extern "C" fn sync_excetion_same_el_spx(elr_el1:u64) -> u64 {
+    let esr_el1 : u64;
+    unsafe {
+        asm!("mrs {}, ESR_EL1", out(reg)esr_el1);
+    }
+    print!("!Ex({:#x})!", (esr_el1 >> 26) & 0x3f);
     return elr_el1 + 4;
 }
 
