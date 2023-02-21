@@ -257,7 +257,9 @@ extern "C" {
     fn reloc_offset_el2() -> !;
 }
 
-static mut PREVIOUS_VBAR: u64 = 0;
+
+
+
 
 #[export_name = "sync_excetion_same_el_sp0"]
 extern "C" fn sync_excetion_same_el_sp0( ef : &mut ExceptionFrame) -> u64 {
@@ -268,6 +270,7 @@ extern "C" fn sync_excetion_same_el_sp0( ef : &mut ExceptionFrame) -> u64 {
 #[export_name = "sync_excetion_same_el_spx"]
 extern "C" fn sync_excetion_same_el_spx( ef : &mut ExceptionFrame) -> u64 {
     let ec = (ef.esr >> 26) & 0x3f;
+    println!("sync_excetion_same_el_spx {:#x} at {:#x}", ec, ef.elr);
     if ec == 0 {
         // it means the register can't be red from current EL or is not implemented
         ef.elr += 4;
@@ -281,6 +284,7 @@ extern "C" fn sync_excetion_same_el_spx( ef : &mut ExceptionFrame) -> u64 {
 #[export_name = "sync_excetion_lower_el_aarch64"]
 extern "C" fn sync_excetion_lower_el_aarch64( ef : &mut ExceptionFrame) -> u64 {
     let ec = (ef.esr >> 26) & 0x3f;
+    println!("sync_excetion_lower_el_aarch64 {:#x} at {:#x}", ec, ef.elr);
     if ec == 0 {
         // it means the register can't be red from current EL or is not implemented
         ef.elr += 4;
@@ -296,6 +300,16 @@ extern "C" fn sync_excetion_lower_el_aarch32( ef : &mut ExceptionFrame) -> u64 {
     let ec = (ef.esr >> 26) & 0x3f;
     panic!("Unsupported sync_excetion_lower_el_aarch32 {:#x} at {:#x}", ec, ef.elr);
 }
+
+
+
+
+
+
+
+static mut PREVIOUS_VBAR: u64 = 0;
+
+
 
 pub fn run(_platform:&Box<dyn PlatformOperations>) -> i64 {
     let mut current_el : u64;
@@ -316,6 +330,10 @@ pub fn run(_platform:&Box<dyn PlatformOperations>) -> i64 {
         else {
             barekit_vbar = exception_table_el2 as u64;
         }
+
+        println!("exception_table={:#x}", exception_table as u64);
+        println!("exception_table2={:#x}", exception_table_el2 as u64);
+        println!("barekit_vbar={:#x}", barekit_vbar);
     }
 
 
@@ -346,7 +364,7 @@ pub fn run(_platform:&Box<dyn PlatformOperations>) -> i64 {
                 source = source.add(1);
                 i+=1;
             }
-            source = exception_table as *const u64;
+            source = barekit_vbar as *const u64;
             source = source.add(0x200/8);
             target = PREVIOUS_VBAR as *mut u64;
             target = target.add(0x200/8);
@@ -359,7 +377,7 @@ pub fn run(_platform:&Box<dyn PlatformOperations>) -> i64 {
                 source = source.add(1);
                 i+=1;
             }
-            source = exception_table as *const u64;
+            source = barekit_vbar as *const u64;
             source = source.add(0x400/8);
             target = PREVIOUS_VBAR as *mut u64;
             target = target.add(0x400/8);
@@ -372,7 +390,7 @@ pub fn run(_platform:&Box<dyn PlatformOperations>) -> i64 {
                 source = source.add(1);
                 i+=1;
             }
-            source = exception_table as *const u64;
+            source = barekit_vbar as *const u64;
             source = source.add(0x600/8);
             target = PREVIOUS_VBAR as *mut u64;
             target = target.add(0x600/8);
@@ -385,6 +403,38 @@ pub fn run(_platform:&Box<dyn PlatformOperations>) -> i64 {
                 source = source.add(1);
                 i+=1;
             }
+            asm!(
+                "dc cvau, {a}",
+                "dsb ish",
+                "ic ivau, {a}",
+                "dsb ish",
+                "isb sy",
+                a = in(reg) PREVIOUS_VBAR
+            );
+            asm!(
+                "dc cvau, {a}",
+                "dsb ish",
+                "ic ivau, {a}",
+                "dsb ish",
+                "isb sy",
+                a = in(reg) PREVIOUS_VBAR+0x200
+            );
+            asm!(
+                "dc cvau, {a}",
+                "dsb ish",
+                "ic ivau, {a}",
+                "dsb ish",
+                "isb sy",
+                a = in(reg) PREVIOUS_VBAR + 0x400
+            );
+            asm!(
+                "dc cvau, {a}",
+                "dsb ish",
+                "ic ivau, {a}",
+                "dsb ish",
+                "isb sy",
+                a = in(reg) PREVIOUS_VBAR + 0x600
+            );
         }
         else {
             println!("Setting VBAR_EL1 to {:#x}", barekit_vbar);
@@ -394,6 +444,41 @@ pub fn run(_platform:&Box<dyn PlatformOperations>) -> i64 {
 
     }
 
+
+    unsafe {
+        let mut value: u64 = 0;
+        asm!("mrs {}, VBAR_EL1", inout(reg) value);
+        println!("VBAR_EL1={:#x}", value);
+    }
+
+    unsafe {
+        let mut value: u64 = 0;
+        asm!("mrs {}, VBAR_EL2", inout(reg) value);
+        println!("VBAR_EL2={:#x}", value);
+    }
+
+    unsafe {
+        let mut value: u64 = 0;
+        asm!("mrs {}, RVBAR_EL1", inout(reg) value);
+        println!("RVBAR_EL1={:#x}", value);
+    }
+
+    unsafe {
+        let mut value: u64 = 0;
+        let addr : u64;
+        asm!(
+            "mrs {a}, RVBAR_EL2", 
+            "adr {b}, 0",
+            a = inout(reg) value,
+            b = out(reg) addr
+        );
+        if processor::get_current_elr() != addr {
+            println!("RVBAR_EL2={:#x}", value);
+        }
+        else {
+            println!("// could not access RVBAR_EL2");
+        }
+    }
 
     unsafe {
         let mut value: u64 = 0;
@@ -644,22 +729,7 @@ pub fn run(_platform:&Box<dyn PlatformOperations>) -> i64 {
     }
 
 
-    unsafe {
-        let mut value: u64 = 0;
-        let addr : u64;
-        asm!(
-            "mrs {a}, RVBAR_EL2", 
-            "adr {b}, 0",
-            a = inout(reg) value,
-            b = out(reg) addr
-        );
-        if processor::get_current_elr() != addr {
-            println!("RVBAR_EL2={:#x}", value);
-        }
-        else {
-            println!("// could not access RVBAR_EL2");
-        }
-    }
+
 
 
     unsafe {
@@ -747,11 +817,6 @@ pub fn run(_platform:&Box<dyn PlatformOperations>) -> i64 {
         }
     }
 
-    unsafe {
-        let mut value: u64 = 0;
-        asm!("mrs {}, RVBAR_EL1", inout(reg) value);
-        println!("RVBAR_EL1={:#x}", value);
-    }
 
 
     unsafe {
