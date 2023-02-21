@@ -107,6 +107,7 @@ pub static mut ALLOC_SIZE: usize = 0;
 
 #[alloc_error_handler]
 fn oom(_: Layout) -> ! {
+    early_prints!("\n\nOUT OF MEMORY\n", 0);
     println!("Out of memory");
     loop {}
 }

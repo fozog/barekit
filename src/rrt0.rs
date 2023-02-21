@@ -52,7 +52,7 @@ pub enum RuntimeContext {
     EFI
 }
 
-static mut TTY_BUFFER :[u8; 512] = [0; 512];
+static mut TTY_BUFFER :[u8; 4096] = [0; 4096];
 
 // the following values can't be changed as they are defined by EFI standard
 const EFI_PAGE_SIZE : u64 = 4096;

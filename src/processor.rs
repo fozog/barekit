@@ -32,6 +32,8 @@
       +--------+--------+
  */
 
+use core::arch::asm;
+
  #[repr(C)]
  pub struct GPRegisters {
     pub x : [u64; 31],
@@ -48,9 +50,82 @@ pub struct StackFrame {
 #[repr(C)]
 pub struct ExceptionFrame {
     pub gp_regs : GPRegisters,
-    pub elr_el1: u64,
-    pub spsr_el1 : u64,
-    pub esr_el1 : u64,
+    pub elr: u64,
+    pub spsr : u64,
+    pub esr : u64,
     pub padding: u64,
     pub stack_frame: StackFrame
+}
+
+pub fn get_current_vbar() -> u64 {
+    let mut current_el : u64;
+    let vbar : u64;
+    unsafe {
+        asm!("mrs {}, CurrentEL", out(reg) current_el);
+        current_el = (current_el >> 2 ) & 3;
+        match  current_el {
+            1 => asm!(
+                "mrs {}, VBAR_EL1",
+                out(reg) vbar
+            ),
+            2 => asm!(
+                "mrs {}, VBAR_EL2",
+                out(reg) vbar
+            ),
+            3 => asm!(
+                "mrs {}, VBAR_EL3",
+                out(reg) vbar
+            ),
+            0_u64 | 4_u64..=u64::MAX => panic!("Invalid EL retrieved: {:#x}", current_el)
+        }
+    };
+    return vbar;
+}
+
+pub fn get_current_elr() -> u64 {
+    let mut current_el : u64;
+    let vbar : u64;
+    unsafe {
+        asm!("mrs {}, CurrentEL", out(reg) current_el);
+        current_el = (current_el >> 2 ) & 3;
+        match  current_el {
+            1 => asm!(
+                "mrs {}, ELR_EL1",
+                out(reg) vbar
+            ),
+            2 => asm!(
+                "mrs {}, ELR_EL2",
+                out(reg) vbar
+            ),
+            3 => asm!(
+                "mrs {}, ELR_EL3",
+                out(reg) vbar
+            ),
+            0_u64 | 4_u64..=u64::MAX => panic!("Invalid EL retrieved: {:#x}", current_el)
+        }
+    };
+    return vbar;
+}
+
+pub fn set_current_vbar(vbar : u64) {
+    let mut current_el : u64;
+    unsafe {
+        asm!("mrs {}, CurrentEL", out(reg) current_el);
+        current_el = (current_el >> 2 ) & 3;
+        match  current_el {
+            1 => asm!(
+                "msr VBAR_EL1, {}",
+                in(reg) vbar
+            ),
+            2 => asm!(
+                "msr VBAR_EL2, {}",
+                in(reg) vbar
+            ),
+            3 => asm!(
+                "msr VBAR_EL3, {}",
+                in(reg) vbar
+            ),
+            0_u64 | 4_u64..=u64::MAX => panic!("Invalid EL retrieved: {:#x}", current_el)
+        }
+    };
 }

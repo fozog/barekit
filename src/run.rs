@@ -12,10 +12,12 @@ use crate::PlatformOperations;
 
 use crate::println;
 
+use crate::processor;
 use crate::processor::ExceptionFrame;
 
 
 global_asm!("
+.align 11
 exception_table:
 
     sub     sp, sp, #304
@@ -117,44 +119,203 @@ trampoline:
 
 ");
 
+
+global_asm!("
+.align 11
+exception_table_el2:
+
+    sub     sp, sp, #304
+    stp     x0, x1, [sp]
+    stp     x2, x3, [sp, #16]
+
+    adr     x0, reloc_offset_el2
+    ldr     x0, [x0]
+    adr     x1, sync_excetion_same_el_sp0
+    sub     x2, x1, x0
+    adr     x1, trampoline_el2
+    sub     x1, x1, x0
+
+    br      x1 // trampoline
+    
+reloc_offset_el2:
+    .quad   0
+
+. = exception_table_el2 + 0x200
+    sub     sp, sp, #304
+    stp     x0, x1, [sp]
+    stp     x2, x3, [sp, #16]
+
+    adr     x0, reloc_offset_el2
+    ldr     x0, [x0]
+    adr     x1, sync_excetion_same_el_spx
+    sub     x2, x1, x0
+    adr     x1, trampoline_el2
+    sub     x1, x1, x0
+
+    br      x1 // trampoline
+
+    . = exception_table_el2 + 0x400
+    sub     sp, sp, #304
+    stp     x0, x1, [sp]
+    stp     x2, x3, [sp, #16]
+
+    adr     x0, reloc_offset_el2
+    ldr     x0, [x0]
+    adr     x1, sync_excetion_lower_el_aarch64
+    sub     x2, x1, x0
+    adr     x1, trampoline_el2
+    sub     x1, x1, x0
+
+    br      x1 // trampoline
+
+    . = exception_table_el2 + 0x600
+    sub     sp, sp, #304
+    stp     x0, x1, [sp]
+    stp     x2, x3, [sp, #16]
+
+    adr     x0, reloc_offset_el2
+    ldr     x0, [x0]
+    adr     x1, sync_excetion_lower_el_aarch32
+    sub     x2, x1, x0
+    adr     x1, trampoline_el2
+    sub     x1, x1, x0
+
+    br      x1 // trampoline
+
+. = exception_table_el2 + 0x800
+
+trampoline_el2:
+    stp     x4, x5, [sp, #32]
+    stp     x6, x7, [sp, #48]
+    stp     x8, x9, [sp, #64]
+    stp     x10, x11, [sp, #80]
+    stp     x12, x13, [sp, #96]
+    stp     x14, x15, [sp, #112]
+    stp     x16, x17, [sp, #128]
+    stp     x18, x19, [sp, #144]
+    stp     x20, x21, [sp, #160]
+    stp     x22, x23, [sp, #176]
+    stp     x24, x25, [sp, #192]
+    stp     x26, x27, [sp, #208]
+    stp     x28, x29, [sp, #224]
+
+    # x21 = old_sp
+    add     x21, sp, #304
+    stp     x30, x21, [sp, #240]
+    
+    # preserve flags, return address and syndrome
+    mrs     x22, elr_el2
+    mrs     x23, spsr_el2
+    stp     x22, x23, [sp, #256]
+    mrs     x24, esr_el2
+    str     x24, [sp, #272]
+
+    # make a new stack frame for backtrace to work in the future
+    stp     x29, x22, [sp, #288]                                                                                               
+    add     x29, sp, #288
+
+
+    mov     x8, x2               // get the handler address in x8
+    mov     x0, sp               // get Exception in x0
+
+    blr     x8
+
+    msr     daifset, #0xf
+
+    #restore returning environment
+    ldp     x22, x23, [sp, #256]
+    msr     elr_el2, x22
+    msr     spsr_el2, x23
+
+    ldp     x0, x1, [sp]
+    ldp     x2, x3, [sp, #16]
+    ldp     x4, x5, [sp, #32]
+    ldp     x6, x7, [sp, #48]
+    ldp     x8, x9, [sp, #64]
+    ldp     x10, x11, [sp, #80]
+    ldp     x12, x13, [sp, #96]
+    ldp     x14, x15, [sp, #112]
+    ldp     x16, x17, [sp, #128]
+    ldp     x18, x19, [sp, #144]
+    ldp     x20, x21, [sp, #160]  
+    ldp     x22, x23, [sp, #176]  
+    ldp     x24, x25, [sp, #192]  
+    ldp     x26, x27, [sp, #208]  
+    ldp     x28, x29, [sp, #224]  
+    ldr     x30, [sp, #240]
+
+    add     sp, sp, #304
+
+    eret
+
+");
+
 extern "C" {
     fn exception_table() -> !;
     fn reloc_offset() -> !;
+    fn exception_table_el2() -> !;
+    fn reloc_offset_el2() -> !;
 }
 
 static mut PREVIOUS_VBAR: u64 = 0;
 
 #[export_name = "sync_excetion_same_el_sp0"]
 extern "C" fn sync_excetion_same_el_sp0( ef : &mut ExceptionFrame) -> u64 {
-    let ec = (ef.esr_el1 >> 26) & 0x3f;
-    panic!("Unsupported sync_excetion_same_el_sp0 {:#x} at {:#x}", ec, ef.elr_el1);
+    let ec = (ef.esr >> 26) & 0x3f;
+    panic!("Unsupported sync_excetion_same_el_sp0 {:#x} at {:#x}", ec, ef.elr);
 }
 
 #[export_name = "sync_excetion_same_el_spx"]
 extern "C" fn sync_excetion_same_el_spx( ef : &mut ExceptionFrame) -> u64 {
-    let ec = (ef.esr_el1 >> 26) & 0x3f;
+    let ec = (ef.esr >> 26) & 0x3f;
     if ec == 0 {
         // it means the register can't be red from current EL or is not implemented
-        ef.elr_el1 += 4;
+        ef.elr += 4;
     }
     else {
-        panic!("Unsupported sync_excetion_same_el_spx {:#x} at {:#x}", ec, ef.elr_el1);
+        panic!("Unsupported sync_excetion_same_el_spx {:#x} at {:#x}", ec, ef.elr);
     }
     return 0;
 }
 
+#[export_name = "sync_excetion_lower_el_aarch64"]
+extern "C" fn sync_excetion_lower_el_aarch64( ef : &mut ExceptionFrame) -> u64 {
+    let ec = (ef.esr >> 26) & 0x3f;
+    if ec == 0 {
+        // it means the register can't be red from current EL or is not implemented
+        ef.elr += 4;
+    }
+    else {
+        panic!("Unsupported sync_excetion_same_el_spx {:#x} at {:#x}", ec, ef.elr);
+    }
+    return 0;
+}
+
+#[export_name = "sync_excetion_lower_el_aarch32"]
+extern "C" fn sync_excetion_lower_el_aarch32( ef : &mut ExceptionFrame) -> u64 {
+    let ec = (ef.esr >> 26) & 0x3f;
+    panic!("Unsupported sync_excetion_lower_el_aarch32 {:#x} at {:#x}", ec, ef.elr);
+}
+
 pub fn run(_platform:&Box<dyn PlatformOperations>) -> i64 {
-    let current_el : u64;
+    let mut current_el : u64;
     unsafe {
         asm!("mrs {}, currentEL", out(reg)current_el);
     }
-    println!("ID registers at startup {:#x}\n", (current_el >> 2 ) &3);
+    current_el = (current_el >> 2 ) &3;
+    println!("ID registers at startup EL-{}\n", current_el);
 
     let  barekit_vbar : u64;
 
     unsafe {
-        asm!("mrs {}, VBAR_EL1", inout(reg) PREVIOUS_VBAR);
-        barekit_vbar = exception_table as u64;
+        //asm!("mrs {}, VBAR_EL1", inout(reg) PREVIOUS_VBAR);
+        PREVIOUS_VBAR = processor::get_current_vbar();
+        if current_el == 1 {
+            barekit_vbar = exception_table as u64;
+        }
+        else {
+            barekit_vbar = exception_table_el2 as u64;
+        }
     }
 
 
@@ -163,8 +324,15 @@ pub fn run(_platform:&Box<dyn PlatformOperations>) -> i64 {
         //TODO: kvmtool to set it to (cached value)
         if PREVIOUS_VBAR != 0 && PREVIOUS_VBAR != 0xf0000000 {
 
-            let offset = reloc_offset as *mut u64;
+            let offset ;
+            if current_el == 1 {
+                offset = reloc_offset as *mut u64;
+            } 
+            else {
+                offset = reloc_offset_el2 as *mut u64;
+            }
             *offset = PREVIOUS_VBAR - barekit_vbar;
+            println!("PREVIOUS_VBAR {:#x}", PREVIOUS_VBAR);
             println!("reloc_offset set to {:#x}", PREVIOUS_VBAR - barekit_vbar);
 
             let mut target = PREVIOUS_VBAR as *mut u64;
@@ -191,10 +359,37 @@ pub fn run(_platform:&Box<dyn PlatformOperations>) -> i64 {
                 source = source.add(1);
                 i+=1;
             }
+            source = exception_table as *const u64;
+            source = source.add(0x400/8);
+            target = PREVIOUS_VBAR as *mut u64;
+            target = target.add(0x400/8);
+            println!("Copy barekit handler from {:#x} to {:#x}", source as u64, target as u64);
+            i = 0;
+            while i < 0x80 / 8
+            {
+                *target = *source;
+                target = target.add(1);
+                source = source.add(1);
+                i+=1;
+            }
+            source = exception_table as *const u64;
+            source = source.add(0x600/8);
+            target = PREVIOUS_VBAR as *mut u64;
+            target = target.add(0x600/8);
+            println!("Copy barekit handler from {:#x} to {:#x}", source as u64, target as u64);
+            i = 0;
+            while i < 0x80 / 8
+            {
+                *target = *source;
+                target = target.add(1);
+                source = source.add(1);
+                i+=1;
+            }
         }
         else {
             println!("Setting VBAR_EL1 to {:#x}", barekit_vbar);
-            asm!("msr VBAR_EL1, {}", in(reg) barekit_vbar);
+            //asm!("msr VBAR_EL1, {}", in(reg) barekit_vbar);
+            processor::set_current_vbar(barekit_vbar);
         }
 
     }
@@ -451,18 +646,15 @@ pub fn run(_platform:&Box<dyn PlatformOperations>) -> i64 {
 
     unsafe {
         let mut value: u64 = 0;
-        let elr_el1: u64;
         let addr : u64;
         asm!(
             "mrs {a}, RVBAR_EL2", 
-            "adr {c}, 0",
-            "mrs {b}, elr_el1",
+            "adr {b}, 0",
             a = inout(reg) value,
-            b = out(reg) elr_el1,
-            c = out(reg) addr
+            b = out(reg) addr
         );
-        if elr_el1 != addr {
-            println!("RVBAR_EL2={:#x}   {:#x}   {:#x}", value, elr_el1, addr);
+        if processor::get_current_elr() != addr {
+            println!("RVBAR_EL2={:#x}", value);
         }
         else {
             println!("// could not access RVBAR_EL2");
@@ -472,18 +664,15 @@ pub fn run(_platform:&Box<dyn PlatformOperations>) -> i64 {
 
     unsafe {
         let mut value: u64 = 0;
-        let elr_el1: u64;
         let addr : u64;
         asm!(
             "mrs {a}, RVBAR_EL3", 
-            "adr {c}, 0",
-            "mrs {b}, elr_el1",
+            "adr {b}, 0",
             a = inout(reg) value,
-            b = out(reg) elr_el1,
-            c = out(reg) addr
+            b = out(reg) addr
         );
-        if elr_el1 != addr {
-            println!("RVBAR_EL3={:#x}   {:#x}   {:#x}", value, elr_el1, addr);
+        if processor::get_current_elr() != addr {
+            println!("RVBAR_EL3={:#x}", value);
         }
         else {
             println!("// could not access RVBAR_EL3");
@@ -492,18 +681,15 @@ pub fn run(_platform:&Box<dyn PlatformOperations>) -> i64 {
 
     unsafe {
         let mut value: u64 = 0;
-        let elr_el1: u64;
         let addr : u64;
         asm!(
             "mrs {a}, SCTLR_EL3", 
-            "adr {c}, 0",
-            "mrs {b}, elr_el1",
+            "adr {b}, 0",
             a = inout(reg) value,
-            b = out(reg) elr_el1,
-            c = out(reg) addr
+            b = out(reg) addr
         );
-        if elr_el1 != addr {
-            println!("SCTLR_EL3={:#x}   {:#x}   {:#x}", value, elr_el1, addr);
+        if processor::get_current_elr() != addr {
+            println!("SCTLR_EL3={:#x}", value);
         }
         else {
             println!("// could not access SCTLR_EL3");
@@ -512,18 +698,15 @@ pub fn run(_platform:&Box<dyn PlatformOperations>) -> i64 {
     
     unsafe {
         let mut value: u64 = 0;
-        let elr_el1: u64;
         let addr : u64;
         asm!(
             "mrs {a}, TPIDR_EL3", 
-            "adr {c}, 0",
-            "mrs {b}, elr_el1",
+            "adr {b}, 0",
             a = inout(reg) value,
-            b = out(reg) elr_el1,
-            c = out(reg) addr
+            b = out(reg) addr
         );
-        if elr_el1 != addr {
-            println!("TPIDR_EL3={:#x}   {:#x}   {:#x}", value, elr_el1, addr);
+        if processor::get_current_elr() != addr {
+            println!("TPIDR_EL3={:#x}", value);
         }
         else {
             println!("// could not access TPIDR_EL3");
@@ -532,18 +715,15 @@ pub fn run(_platform:&Box<dyn PlatformOperations>) -> i64 {
 
     unsafe {
         let mut value: u64 = 0;
-        let elr_el1: u64;
         let addr : u64;
         asm!(
             "mrs {a}, VMPIDR_EL2", 
-            "adr {c}, 0",
-            "mrs {b}, elr_el1",
+            "adr {b}, 0",
             a = inout(reg) value,
-            b = out(reg) elr_el1,
-            c = out(reg) addr
+            b = out(reg) addr
         );
-        if elr_el1 != addr {
-            println!("VMPIDR_EL2={:#x}   {:#x}   {:#x}", value, elr_el1, addr);
+        if processor::get_current_elr() != addr {
+            println!("VMPIDR_EL2={:#x}", value);
         }
         else {
             println!("// could not access VMPIDR_EL2");
@@ -552,18 +732,15 @@ pub fn run(_platform:&Box<dyn PlatformOperations>) -> i64 {
 
     unsafe {
         let mut value: u64 = 0;
-        let elr_el1: u64;
         let addr : u64;
         asm!(
             "mrs {a}, VPIDR_EL2", 
-            "adr {c}, 0",
-            "mrs {b}, elr_el1",
+            "adr {b}, 0",
             a = inout(reg) value,
-            b = out(reg) elr_el1,
-            c = out(reg) addr
+            b = out(reg) addr
         );
-        if elr_el1 != addr {
-            println!("VPIDR_EL2={:#x}   {:#x}   {:#x}", value, elr_el1, addr);
+        if processor::get_current_elr() != addr {
+            println!("VPIDR_EL2={:#x}", value);
         }
         else {
             println!("// could not access VPIDR_EL2");
@@ -579,8 +756,8 @@ pub fn run(_platform:&Box<dyn PlatformOperations>) -> i64 {
 
     unsafe {
         // this is for EFI to properly execute run/boot time services
-        println!("Restoring VBAR_EL1 to {:#x}", PREVIOUS_VBAR);
-        asm!("msr VBAR_EL1, {}", in(reg) PREVIOUS_VBAR);
+        println!("Restoring current VBAR to {:#x}", PREVIOUS_VBAR);
+        processor::set_current_vbar(PREVIOUS_VBAR);
     }
     return 0;
 }

@@ -10,6 +10,7 @@ use alloc::boxed::Box;
 
 use crate::drivers::NS16550Output;
 use crate::drivers::PL011Output;
+use crate::dt;
 use crate::log;
 use crate::log::Logger;
 use crate::early_prints;
@@ -33,8 +34,11 @@ use crate::print::_early_print_s;
 fn on_panic(_info: &PanicInfo) -> ! 
 {
     let message: Option<&core::fmt::Arguments> = _info.message();
-    
-    println!("Panic!");
+    if let Some(location) = _info.location() {
+        early_prints!("Panic at $ ", location.file().as_ptr() as u64 );
+        early_prints!("line %\n", location.line() as u64);    
+    }
+    println!("Panic!!");
     println!("{:?}", message);
     
     loop {}
@@ -143,8 +147,8 @@ pub  fn rrt1_entry(platform: Box<dyn PlatformOperations>) -> i64
         Some(ref c) => c
     };
 
-    //let path = dt::to_path(stdout);
-    //early_prints!("stdout-path from node=$\n", path.as_ptr() as u64);
+    let path = dt::to_path(stdout);
+    early_prints!("stdout-path from node=$\n", path.as_ptr() as u64);
 
     let compatible_prop = devt.get_prop_by_name(stdout, "compatible").unwrap();
     let compatible_strings = compatible_prop.iter_str();
@@ -159,6 +163,7 @@ pub  fn rrt1_entry(platform: Box<dyn PlatformOperations>) -> i64
     #[allow(unused_assignments)]
     let mut tty: Option<Box<dyn Logger>> = None;
     
+
     if let Some(compat) = PL011Output::is_compatible(compatible_strings.clone()) {
         tty =  PL011Output::new(compat, m.base);
         early_prints!("pl011 driver created\n", 0);
@@ -168,11 +173,7 @@ pub  fn rrt1_entry(platform: Box<dyn PlatformOperations>) -> i64
         early_prints!("ns16550 driver created\n", 0);
     } else {
         early_prints!("no driver found\n", 0);
-        panic!("No driver found", )
-    }
-    
-    if let None = tty {
-        panic!("No stdout with driver found");
+        panic!("No driver found")
     }
     
     early_prints!("About to change the driver\n", 0);
