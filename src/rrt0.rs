@@ -41,6 +41,7 @@ mod dt;
 mod platforms;
 mod run;
 mod coff_stager;
+mod processor;
 
 #[derive(PartialEq)]
 pub enum RuntimeContext {
