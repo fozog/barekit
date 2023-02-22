@@ -13,6 +13,7 @@ fi
 PARAMS=$*
 
 LKVM=$HOME/kvmtool
+QEMU=$HOME/qemu/build/
 
 set $(egrep  ^NATURE Makefile)
 NATURE=$3
@@ -54,11 +55,11 @@ kvmtool)
 ;;
 
 qemu-kvm)
-	qemu-system-aarch64 -nographic  -machine virt,accel=kvm -cpu host -serial mon:stdio -m 16M -kernel $APP -append "$PARAMS"
+	$QEMU/qemu-system-aarch64 -nographic  -machine virt,accel=kvm -cpu host -serial mon:stdio -m 16M -kernel $APP -append "$PARAMS"
 ;;
 
 qemu)
-	qemu-system-aarch64 -nographic  -machine virt -cpu cortex-a72 -serial mon:stdio -m 16M -kernel $APP -append "$PARAMS"
+	$QEMU/qemu-system-aarch64 -nographic  -machine virt -cpu cortex-a72 -serial mon:stdio -m 16M -kernel $APP -append "$PARAMS"
 ;;
 
 qemu-edk2)
@@ -70,7 +71,7 @@ qemu-edk2)
 		ACCEL=hvf
 	fi
 	#minimum of 64M to initialize the EFI subsystem
-	qemu-system-aarch64 -nographic -nodefaults -machine virt -cpu cortex-a72 -serial mon:stdio -m 1G \
+	$QEMU/qemu-system-aarch64 -nographic -nodefaults -machine virt -cpu cortex-a72 -serial mon:stdio -m 1G \
 		-drive if=pflash,format=raw,readonly=on,file=/usr/share/AAVMF/AAVMF_CODE.fd \
 		-drive if=pflash,format=raw,file=run_efi/AAVMF_VARS.fd \
 		-drive file=run_efi/disk.img,format=raw,if=virtio
@@ -85,7 +86,7 @@ qemu-uboot)
 		ACCEL=hvf
 	fi
 	#minimum of 64M to initialize the EFI subsystem
-	qemu-system-aarch64 -nographic -nodefaults -machine virt,accel=kvm -cpu host -serial mon:stdio -m 64M \
+	$QEMU/qemu-system-aarch64 -nographic -nodefaults -machine virt -cpu cortex-a72 -serial mon:stdio -m 1G \
 		-drive if=pflash,format=raw,readonly=on,file=run_efi/QEMU_UBOOT.fd \
 		-drive if=pflash,format=raw,file=run_efi/QEMU_UBOOT_ENV.fd \
 		-drive file=run_efi/disk.img,format=raw,if=virtio
@@ -101,7 +102,7 @@ qemu-tfa2)
 	dd if=../arm-trusted-firmware/build/qemu/release/fip.bin of=run_efi/flash.bin seek=64 bs=4096 conv=notrunc > /dev/null 2>&1
 	#need to have 1GB of RAM in the VM for TFA to work !!!
 	#https://elixir.bootlin.com/arm-trusted-firmware/v2.8/source/plat/qemu/qemu/include/platform_def.h#L181
-	qemu-system-aarch64 -nographic -nodefaults -machine virt,secure=on -cpu cortex-a72 -m 1G \
+	$QEMU/qemu-system-aarch64 -nographic -nodefaults -machine virt,secure=on -cpu cortex-a72 -m 1G \
 		-chardev stdio,mux=on,id=char0 \
 		-mon chardev=char0,mode=readline \
 		-serial chardev:char0 \
@@ -122,7 +123,7 @@ qemu-tfa1)
 	dd if=../arm-trusted-firmware/build/qemu/release/fip.bin of=run_efi/flash.bin seek=64 bs=4096 conv=notrunc > /dev/null 2>&1
 	#need to have 1GB of RAM in the VM for TFA to work !!!
 	#https://elixir.bootlin.com/arm-trusted-firmware/v2.8/source/plat/qemu/qemu/include/platform_def.h#L181
-	qemu-system-aarch64 -nographic -nodefaults -machine virt,secure=on -cpu cortex-a72 -m 1G \
+	$QEMU/qemu-system-aarch64 -nographic -nodefaults -machine virt,secure=on -cpu cortex-a72 -m 1G \
 		-chardev stdio,mux=on,id=char0 \
 		-mon chardev=char0,mode=readline \
 		-serial chardev:char0 \
@@ -134,7 +135,7 @@ qemu-tfa1)
 
 qemu-el3)
 	stage_el3_flash run_efi/flash.bin 0xe000000
-	qemu-system-aarch64 -nographic -nodefaults -machine virt,secure=on -cpu cortex-a72 -m 64M \
+	$QEMU/qemu-system-aarch64 -nographic -nodefaults -machine virt,secure=on -cpu cortex-a72 -m 64M \
 		-chardev stdio,mux=on,id=char0 \
 		-mon chardev=char0,mode=readline \
 		-serial chardev:char0 \

@@ -28,7 +28,7 @@ use fdt_rs::error::DevTreeError;
 #[cfg(feature = "early_print")]
 use crate::print::_early_print_s;
 
-
+#[cfg(feature = "early_print")]
 #[panic_handler]
 #[no_mangle]
 fn on_panic(_info: &PanicInfo) -> ! 
@@ -44,10 +44,21 @@ fn on_panic(_info: &PanicInfo) -> !
     loop {}
 }
 
+#[cfg(not(feature = "early_print"))]
+#[panic_handler]
+#[no_mangle]
+fn on_panic(_info: &PanicInfo) -> ! 
+{
+    let message: Option<&core::fmt::Arguments> = _info.message();
+    println!("Panic!!");
+    println!("{:?}", message);
+    
+    loop {}
+}
 static mut SCRATCHPAD: [u8; 132768] = [0; 132768];
 
 #[allow(dead_code)]
-pub  fn rrt1_entry(platform: Box<dyn PlatformOperations>) -> i64 
+pub  fn rrt1_entry(mut platform: Box<dyn PlatformOperations>) -> i64 
 {
     // we have platform ownership here
     early_prints!("rr1_entry()\n", 0);
@@ -75,6 +86,7 @@ pub  fn rrt1_entry(platform: Box<dyn PlatformOperations>) -> i64
 
     if fdt == 0 {
         early_prints!("Assume ACPI\n", 0);
+        platform.set_boot_tty();
     }
     else {
 
@@ -147,8 +159,8 @@ pub  fn rrt1_entry(platform: Box<dyn PlatformOperations>) -> i64
         Some(ref c) => c
     };
 
-    let path = dt::to_path(stdout);
-    early_prints!("stdout-path from node=$\n", path.as_ptr() as u64);
+    let _path = dt::to_path(stdout);
+    early_prints!("stdout-path from node=$\n", _path.as_ptr() as u64);
 
     let compatible_prop = devt.get_prop_by_name(stdout, "compatible").unwrap();
     let compatible_strings = compatible_prop.iter_str();

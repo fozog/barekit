@@ -304,7 +304,57 @@ extern "C" fn sync_excetion_lower_el_aarch32( ef : &mut ExceptionFrame) -> u64 {
 
 
 
+#[allow(dead_code)]
+fn dump_paging_step(anchor : u64, base : u64, level: usize, level_size: usize) {
 
+    if level > 4 {
+        return;
+    }
+    //println!("dump_paging_step(anchor={:#x}, base={:#x}, level={}, level_size={}", anchor, base, level, level_size);
+    unsafe { 
+        let bits: u8 = processor::BITS_AT_LEVEL[level];
+        let size:usize = 1 << bits;
+        let mut count = level_size / size;
+        if count > 512 { count = 512};
+        let mut i : usize = 0;
+        let mut table = anchor as *const u64;
+        while i < count {
+            let va_start: u64 = base + (size * i) as u64;
+            let va_end : u64 = va_start + (size - 1) as u64;
+            if  processor::page_is_present(*table) {
+                if processor::page_is_table(*table, bits) {
+                    let target = processor::table_target_at_index(*table , level);
+                    println!("l{}_{:#016x}[{}]={:#016x}: table @ {:#016x} for VA {:#016x} - {:#016x}", 
+                        level - 1, anchor, i, 
+                        *table, 
+                        target as u64, va_start, va_end
+                    );
+                    dump_paging_step(target as u64, va_start, level+1, size)
+                }
+                else {
+                    let target =  processor::page_target_at_index(*table , level);
+                    let ro = (*table & (1 << 7)) !=0;
+                    println!("l{}_{:#016x}[{}]={:#016x}: mapping (ro={}) for  VA {:#016x} - {:#016x} ->  PA {:#016x} - {:#016x}",
+                        level - 1, anchor, i, 
+                        *table, ro, 
+                        va_start, va_end, target as u64, target as u64+ (size -1) as u64
+                        );
+                }
+                
+            }
+            i += 1;
+            table = table.add(1);
+        }
+    }
+}
+
+
+#[allow(dead_code)]
+fn dump_paging() {
+    let anchor = processor::get_anchor_for(0);
+    let info = processor::paging_get_low_mem_paging();
+    dump_paging_step(anchor, 0, info.0 as usize, info.1);
+}
 
 
 static mut PREVIOUS_VBAR: u64 = 0;
@@ -312,18 +362,17 @@ static mut PREVIOUS_VBAR: u64 = 0;
 
 
 pub fn run(_platform:&Box<dyn PlatformOperations>) -> i64 {
-    let mut current_el : u64;
-    unsafe {
-        asm!("mrs {}, currentEL", out(reg)current_el);
-    }
-    current_el = (current_el >> 2 ) &3;
+
+    let  current_el = processor::get_current_el();
+
     println!("ID registers at startup EL-{}\n", current_el);
 
     let  barekit_vbar : u64;
 
     unsafe {
         //asm!("mrs {}, VBAR_EL1", inout(reg) PREVIOUS_VBAR);
-        PREVIOUS_VBAR = processor::get_current_vbar();
+        PREVIOUS_VBAR = processor::get_vbar();
+        
         if current_el == 1 {
             barekit_vbar = exception_table as u64;
         }
@@ -342,16 +391,31 @@ pub fn run(_platform:&Box<dyn PlatformOperations>) -> i64 {
         //TODO: kvmtool to set it to (cached value)
         if PREVIOUS_VBAR != 0 && PREVIOUS_VBAR != 0xf0000000 {
 
-            let offset ;
-            if current_el == 1 {
-                offset = reloc_offset as *mut u64;
-            } 
-            else {
-                offset = reloc_offset_el2 as *mut u64;
-            }
-            *offset = PREVIOUS_VBAR - barekit_vbar;
+            //dump_paging();
+
             println!("PREVIOUS_VBAR {:#x}", PREVIOUS_VBAR);
-            println!("reloc_offset set to {:#x}", PREVIOUS_VBAR - barekit_vbar);
+
+            let info = processor::paging_virtual_info(PREVIOUS_VBAR);
+            if let Some(vbar_page_info) = info {
+                let page_size = vbar_page_info.0;
+                let entry=vbar_page_info.2 as *mut u64;
+                println!("VBAR decriptor is at {:#x}, page is {} bytes", entry as u64, page_size);
+                // turn it RW
+                *entry = *entry & ! (1 << 7);
+                let location = (entry as u64) & 0xFFF;
+                asm!(
+                    "dc cvau, {a}",
+                    "dsb ish",
+                    "ic ivau, {a}",
+                    "dsb ish",
+                    "isb sy",
+                    "tlbi vmalle1",
+                    "dsb sy",
+                    "isb",
+                    a = in(reg) location
+                );
+
+            }
 
             let mut target = PREVIOUS_VBAR as *mut u64;
             let mut source =  barekit_vbar as *const u64;
@@ -403,6 +467,19 @@ pub fn run(_platform:&Box<dyn PlatformOperations>) -> i64 {
                 source = source.add(1);
                 i+=1;
             }
+
+            let offset ;
+            if current_el == 1 {
+                offset = ((reloc_offset as u64) - (exception_table as u64)+ PREVIOUS_VBAR) as *mut u64;
+                *offset = PREVIOUS_VBAR - exception_table as u64;
+            } 
+            else {
+                offset = ((reloc_offset_el2 as u64) - (exception_table_el2 as u64)+ PREVIOUS_VBAR) as *mut u64;
+                *offset = PREVIOUS_VBAR - exception_table_el2 as u64
+            }
+                        
+            println!("reloc_offset set to {:#x}", PREVIOUS_VBAR - barekit_vbar);
+
             asm!(
                 "dc cvau, {a}",
                 "dsb ish",
@@ -439,7 +516,7 @@ pub fn run(_platform:&Box<dyn PlatformOperations>) -> i64 {
         else {
             println!("Setting VBAR_EL1 to {:#x}", barekit_vbar);
             //asm!("msr VBAR_EL1, {}", in(reg) barekit_vbar);
-            processor::set_current_vbar(barekit_vbar);
+            processor::set_vbar(barekit_vbar);
         }
 
     }
@@ -472,7 +549,7 @@ pub fn run(_platform:&Box<dyn PlatformOperations>) -> i64 {
             a = inout(reg) value,
             b = out(reg) addr
         );
-        if processor::get_current_elr() != addr {
+        if processor::get_elr() != addr {
             println!("RVBAR_EL2={:#x}", value);
         }
         else {
@@ -741,7 +818,7 @@ pub fn run(_platform:&Box<dyn PlatformOperations>) -> i64 {
             a = inout(reg) value,
             b = out(reg) addr
         );
-        if processor::get_current_elr() != addr {
+        if processor::get_elr() != addr {
             println!("RVBAR_EL3={:#x}", value);
         }
         else {
@@ -758,7 +835,7 @@ pub fn run(_platform:&Box<dyn PlatformOperations>) -> i64 {
             a = inout(reg) value,
             b = out(reg) addr
         );
-        if processor::get_current_elr() != addr {
+        if processor::get_elr() != addr {
             println!("SCTLR_EL3={:#x}", value);
         }
         else {
@@ -775,7 +852,7 @@ pub fn run(_platform:&Box<dyn PlatformOperations>) -> i64 {
             a = inout(reg) value,
             b = out(reg) addr
         );
-        if processor::get_current_elr() != addr {
+        if processor::get_elr() != addr {
             println!("TPIDR_EL3={:#x}", value);
         }
         else {
@@ -792,7 +869,7 @@ pub fn run(_platform:&Box<dyn PlatformOperations>) -> i64 {
             a = inout(reg) value,
             b = out(reg) addr
         );
-        if processor::get_current_elr() != addr {
+        if processor::get_elr() != addr {
             println!("VMPIDR_EL2={:#x}", value);
         }
         else {
@@ -809,7 +886,7 @@ pub fn run(_platform:&Box<dyn PlatformOperations>) -> i64 {
             a = inout(reg) value,
             b = out(reg) addr
         );
-        if processor::get_current_elr() != addr {
+        if processor::get_elr() != addr {
             println!("VPIDR_EL2={:#x}", value);
         }
         else {
@@ -822,7 +899,8 @@ pub fn run(_platform:&Box<dyn PlatformOperations>) -> i64 {
     unsafe {
         // this is for EFI to properly execute run/boot time services
         println!("Restoring current VBAR to {:#x}", PREVIOUS_VBAR);
-        processor::set_current_vbar(PREVIOUS_VBAR);
+        processor::set_vbar(PREVIOUS_VBAR);
     }
+    _platform.park();
     return 0;
 }

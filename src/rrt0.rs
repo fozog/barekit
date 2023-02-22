@@ -12,6 +12,7 @@
 #![feature(alloc_error_handler)]
 #![feature(atomic_from_mut)]
 #![feature(strict_provenance)]
+#![feature(exclusive_range_pattern)]
 
 extern crate alloc;
 
