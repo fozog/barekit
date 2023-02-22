@@ -389,7 +389,7 @@ pub fn run(_platform:&Box<dyn PlatformOperations>) -> i64 {
     unsafe {
         // kvmtool sets VBAR to a special value 
         //TODO: kvmtool to set it to (cached value)
-        if PREVIOUS_VBAR != 0 && PREVIOUS_VBAR != 0xf0000000 {
+        if PREVIOUS_VBAR != 0 && PREVIOUS_VBAR != 0xf0000000 && PREVIOUS_VBAR != 0xf1000000 {
 
             //dump_paging();
 

@@ -5,6 +5,7 @@
 */
 
 use core::panic::PanicInfo;
+use core::hint;
 
 use alloc::boxed::Box;
 
@@ -41,19 +42,23 @@ fn on_panic(_info: &PanicInfo) -> !
     println!("Panic!!");
     println!("{:?}", message);
     
-    loop {}
+    loop {
+        hint::spin_loop();
+    }
 }
 
+//This will be rust_begin_unwind symbol
 #[cfg(not(feature = "early_print"))]
 #[panic_handler]
-#[no_mangle]
 fn on_panic(_info: &PanicInfo) -> ! 
 {
     let message: Option<&core::fmt::Arguments> = _info.message();
     println!("Panic!!");
     println!("{:?}", message);
     
-    loop {}
+    loop {
+        hint::spin_loop();
+    }
 }
 static mut SCRATCHPAD: [u8; 132768] = [0; 132768];
 
