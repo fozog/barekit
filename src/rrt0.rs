@@ -93,11 +93,7 @@ pub extern "C"  fn rrt0_entry(x0: u64, x1: u64, x2: u64, x3: u64, x4: u64, x5: u
         early_prints!("x3=%\n", x3);
         early_prints!("x4=%\n", x4);
         early_prints!("x5=%\n", x5);
-        let mut exception_level: u64;
-        unsafe {
-            asm!("mrs {}, CurrentEL", out(reg) exception_level);
-        }
-        exception_level >>=2;
+        let exception_level = processor::get_current_el();
         early_prints!("EL=%\n", exception_level);
         if exception_level == 3 {
             rc = RuntimeContext::BareMetalEL3;
@@ -204,10 +200,6 @@ pub extern "C"  fn rrt0_entry(x0: u64, x1: u64, x2: u64, x3: u64, x4: u64, x5: u
     log::set_target(Some(Box::new(tty_earlydev)));
     early_prints!("done.\n", unsafe {TTY_BUFFER.as_ptr() as u64});
 
-    println!("rrt0 boot heap ready\n");
-
-    println!("rrt0_entry: about to create the platform\n");
-
     let information = PlatformInfo { 
         image_base: load_address, 
         image_end: end_of_image,
@@ -226,7 +218,6 @@ pub extern "C"  fn rrt0_entry(x0: u64, x1: u64, x2: u64, x3: u64, x4: u64, x5: u
 
     platform.set_boot_tty();
 
-    println!("calling rrt1_entry\n");
     rrt1_entry(platform)
 
 }

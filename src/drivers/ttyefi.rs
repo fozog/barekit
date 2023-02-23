@@ -22,7 +22,7 @@ impl fmt::Write for TTYEFI<'_> {
             let mut dst: [u16; 2] = [0, 0];
             c.encode_utf16(&mut dst);
             unsafe {
-                    ((*(self.sys_tab.con_out)).output_string)(self.sys_tab.con_out, dst.as_mut_ptr());
+                ((*(self.sys_tab.con_out)).output_string) (self.sys_tab.con_out, dst.as_mut_ptr());
             }
         }
         Ok(())

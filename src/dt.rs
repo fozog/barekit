@@ -10,7 +10,6 @@ use core::slice::ChunksExact;
 
 
 extern crate alloc;
-use crate::println;
 
 use alloc::vec::Vec;
 use alloc::string::String;
@@ -240,11 +239,11 @@ impl<'a> DeviceTree<'a> {
             //println!("     prop {}: {} bytes ", pname, prop.length());
             if pname.eq("#address-cells") {
                 this.acells=prop.u32(0).unwrap();
-                println!("#address-cells {}", this.acells);
+                //println!("#address-cells {}", this.acells);
             }
             else if pname.eq("#size-cells") {
                 this.scells=prop.u32(0).unwrap();
-                println!("#size-cells {}", this.scells);
+                //println!("#size-cells {}", this.scells);
             }
             else if pname.eq("interrupt-parent") {
                 this.interrupt_parent=prop.phandle(0).unwrap();

@@ -77,5 +77,8 @@ impl<'a> PlatformOperations<'a> for Platform<'a> {
         return true;
     }
 
+    fn get_name(&self) -> &str {
+        "S-EL1"
+    }
 
 }

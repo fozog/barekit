@@ -5,6 +5,9 @@ edition = "2021"
 
 [features]
 early_print = []
+compile-for-el1 = []
+compile-for-el2 = []
+compile-for-el3 = []
 
 [[bin]]
 name = "barekit"

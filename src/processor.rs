@@ -59,6 +59,29 @@ pub struct ExceptionFrame {
     pub stack_frame: StackFrame
 }
 
+#[cfg(feature = "compile-for-el3")]
+#[inline]
+pub fn get_current_el() -> u8 
+{
+    3
+}
+
+#[cfg(feature = "compile-for-el2")]
+#[inline]
+pub fn get_current_el() -> u8 
+{
+    2
+}
+
+#[cfg(feature = "compile-for-el1")]
+#[inline]
+pub fn get_current_el() -> u8 
+{
+    1
+}
+
+#[cfg(not(any(feature = "compile-for-el1", feature= "compile-for-el2", feature= "compile-for-el3")))]
+#[inline]
 pub fn get_current_el() -> u8 
 {
     let mut current_el : u64;
@@ -77,7 +100,7 @@ pub fn get_vbar() -> u64 {
             1 => asm!("mrs {}, VBAR_EL1", out(reg) value),
             2 => asm!("mrs {}, VBAR_EL2", out(reg) value),
             3 => asm!("mrs {}, VBAR_EL3", out(reg) value),
-            0 | 4..=u8::MAX => panic!("Invalid EL retrieved: {:#x}", current_el)
+            _ => panic!("Invalid EL retrieved: {:#x}", current_el)
         }
     };
     return value;
@@ -92,7 +115,7 @@ pub fn get_elr() -> u64 {
             1 => asm!("mrs {}, ELR_EL1", out(reg) value),
             2 => asm!("mrs {}, ELR_EL2", out(reg) value),
             3 => asm!("mrs {}, ELR_EL3", out(reg) value),
-            0 | 4..=u8::MAX => panic!("Invalid EL retrieved: {:#x}", current_el)
+            _ => panic!("Invalid EL retrieved: {:#x}", current_el)
         }
     };
     return value;
@@ -106,7 +129,7 @@ pub fn get_tcr() -> u64 {
             1 => asm!("mrs {}, TCR_EL1", out(reg) value),
             2 => asm!("mrs {}, TCR_EL2", out(reg) value),
             3 => asm!("mrs {}, TCR_EL3", out(reg) value),
-            0 | 4..=u8::MAX => panic!("Invalid EL retrieved: {:#x}", current_el)
+            _ => panic!("Invalid EL retrieved: {:#x}", current_el)
         }
     };
     return value;
@@ -119,7 +142,7 @@ pub fn set_vbar(vbar : u64) {
             1 => asm!("msr VBAR_EL1, {}", in(reg) vbar),
             2 => asm!("msr VBAR_EL2, {}", in(reg) vbar),
             3 => asm!("msr VBAR_EL3, {}", in(reg) vbar),
-            0 | 4..=u8::MAX => panic!("Invalid EL retrieved: {:#x}", current_el)
+            _ => panic!("Invalid EL retrieved: {:#x}", current_el)
         }
     };
 }
@@ -204,7 +227,7 @@ pub fn paging_get_low_mem_paging() -> (u8, usize)
         25..34 => level = TRANSLATION_3_LEVELS,
         34..43 => level = TRANSLATION_2_LEVELS,
         43..49 => level = TRANSLATION_1_LEVEL,
-        0..12 | 49..=u8::MAX => panic!("Invalid T0SZ retrieved {:#x} from TCR= {:#x}", tsz, tcr)
+        _      => panic!("Invalid T0SZ retrieved {:#x} from TCR= {:#x}", tsz, tcr)
     }
     let size: u64 = 1_u64 << (64 - tsz);
     return (level, size as usize);
@@ -240,7 +263,7 @@ pub fn get_anchor_for(va: u64) -> u64
             },
             2 => asm!("mrs {}, TTBR0_EL2", out(reg) value),
             3 => asm!("mrs {}, TTBR0_EL3", out(reg) value),
-            0 | 4..=u8::MAX => panic!("Invalid EL retrieved: {:#x}", current_el)
+            _ => panic!("Invalid EL retrieved: {:#x}", current_el)
         }
     }
     // the TTBRx_ELy bit 0 can mean something but is not part of the address
@@ -288,4 +311,26 @@ pub fn paging_virtual_info(location: u64) -> Option<(u64, *const u64, *const u64
     let anchor = get_anchor_for(location);
     let info = paging_get_low_mem_paging();
     return paging_virtual_info_ex(anchor, info.0 as usize, location);
+}
+
+pub fn paging_invalidate_for(location: u64) {
+    unsafe {
+        asm!(
+            "dc cvau, {a}",
+            "dsb ish",
+            "ic ivau, {a}",
+            "dsb ish",
+            "isb sy",
+            a = in(reg) location
+        );
+    }
+    let current_el = get_current_el();
+    unsafe {
+        match  current_el {
+            1 => asm!("tlbi vmalle1","dsb sy", "isb"),
+            2 => asm!("tlbi alle2","dsb sy", "isb"),
+            3 => asm!("tlbi alle3","dsb sy", "isb"),
+            _ => panic!("Invalid EL retrieved: {:#x}", current_el)
+        }
+    };
 }

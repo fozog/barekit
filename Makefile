@@ -1,6 +1,7 @@
 APPNAME := barekit
 NATURE := release
 #FEATURES := --features early_print
+FEATURES += --features compile-for-el3
 
 ifeq ($(NATURE),release)
 	BUILD_TAG := --release

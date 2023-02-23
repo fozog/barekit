@@ -47,4 +47,8 @@ impl<'a> PlatformOperations<'a> for Platform<'a> {
         self._dt = devt;
     }
 
+    fn get_name(&self) -> &str {
+        "EL1/2"
+    }
+
 }
