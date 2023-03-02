@@ -11,6 +11,7 @@ use core::arch::global_asm;
 use crate::PlatformOperations;
 
 use crate::println;
+use crate::print;
 
 use crate::processor;
 use crate::processor::ExceptionFrame;
@@ -493,6 +494,424 @@ fn dump_paging() {
 static mut PREVIOUS_VBAR: u64 = 0;
 
 
+fn generate_cpu_vobj() {
+    print!("\n");
+    print!("-vobj 'CPU#name=\"\";");
+
+
+    unsafe {
+        let mut value: u64 = 0;
+        asm!("mrs {}, MIDR_EL1", inout(reg) value);
+        if value != 0 {
+            print!("MIDR_EL1={:#x};", value);
+        }
+    }
+
+    unsafe {
+        let mut value: u64 = 0;
+        asm!("mrs {}, MPIDR_EL1", inout(reg) value);
+        if value != 0 {
+            print!("MPIDR_EL1={:#x};", value);
+        }
+    }
+
+    unsafe {
+        let mut value: u64 = 0;
+        asm!("mrs {}, REVIDR_EL1", inout(reg) value);
+        if value != 0 {
+            print!("REVIDR_EL1={:#x};", value);
+        }
+    }
+    
+    unsafe {
+        let mut value: u64 = 0;
+        asm!("mrs {}, RVBAR_EL1", inout(reg) value);
+        if value != 0 {
+            print!("RVBAR_EL1={:#x};", value);
+        }
+    }
+
+    unsafe {
+        let mut value: u64 = 0;
+        asm!(
+            "mrs {a}, RVBAR_EL2", 
+            a = inout(reg) value
+        );
+        if value != 0 {
+            print!("RVBAR_EL2={:#x};", value);
+        }
+    }
+
+
+    unsafe {
+        let mut value: u64 = 0;
+        let addr : u64;
+        asm!(
+            "mrs {a}, RVBAR_EL3", 
+            "adr {b}, 0",
+            a = inout(reg) value,
+            b = out(reg) addr
+        );
+        if processor::get_elr() != addr {
+            if value != 0 {
+                print!("RVBAR_EL3={:#x};", value);
+            }
+        }
+    }
+
+/* 
+    unsafe {
+        let mut value: u64 = 0;
+        asm!("mrs {}, CCSIDR_EL1", inout(reg) value);
+        if value != 0 {
+            print!("CCSIDR_EL1={:#x};", value);
+        }
+    }
+
+    unsafe {
+        let mut value: u64 = 0;
+        asm!("mrs {}, CLIDR_EL1", inout(reg) value);
+        if value != 0 {
+            print!("CLIDR_EL1={:#x};", value);
+        }
+    }
+*/
+    unsafe {
+        let mut value: u64 = 0;
+        asm!("mrs {}, ID_AA64AFR0_EL1", inout(reg) value);
+        if value != 0 {
+            print!("ID_AA64AFR0_EL1={:#x};", value);
+        }
+    }
+
+    unsafe {
+        let mut value: u64 = 0;
+        asm!("mrs {}, ID_AA64AFR1_EL1", inout(reg) value);
+        if value != 0 {
+            print!("ID_AA64AFR1_EL1={:#x};", value);
+        }
+    }
+
+    unsafe {
+        let mut value: u64 = 0;
+        asm!("mrs {}, ID_AA64DFR0_EL1", inout(reg) value);
+        if value != 0 {
+            print!("ID_AA64DFR0_EL1={:#x};", value);
+        }
+    }
+
+    unsafe {
+        let mut value: u64 = 0;
+        asm!("mrs {}, ID_AA64DFR1_EL1", inout(reg) value);
+        if value != 0 {
+            print!("ID_AA64DFR1_EL1={:#x};", value);
+        }
+    }
+
+    unsafe {
+        let mut value: u64 = 0;
+        asm!("mrs {}, ID_AA64ISAR0_EL1", inout(reg) value);
+        if value != 0 {
+            print!("ID_AA64ISAR0_EL1={:#x};", value);
+        }
+    }
+
+    unsafe {
+        let mut value: u64 = 0;
+        asm!("mrs {}, ID_AA64ISAR1_EL1", inout(reg) value);
+        if value != 0 {
+            print!("ID_AA64ISAR1_EL1={:#x};", value);
+        }
+    }
+
+    unsafe {
+        let mut value: u64 = 0;
+        asm!("mrs {}, ID_AA64ISAR2_EL1", inout(reg) value);
+        if value != 0 {
+            print!("ID_AA64ISAR2_EL1={:#x};", value);
+        }
+    }
+
+    unsafe {
+        let mut value: u64 = 0;
+        asm!("mrs {}, ID_AA64MMFR0_EL1", inout(reg) value);
+        if value != 0 {
+            print!("ID_AA64MMFR0_EL1={:#x};", value);
+        }
+    }
+
+    unsafe {
+        let mut value: u64 = 0;
+        asm!("mrs {}, ID_AA64MMFR1_EL1", inout(reg) value);
+        if value != 0 {
+            print!("ID_AA64MMFR1_EL1={:#x};", value);
+        }
+    }
+
+    unsafe {
+        let mut value: u64 = 0;
+        asm!("mrs {}, ID_AA64MMFR2_EL1", inout(reg) value);
+        if value != 0 {
+            print!("ID_AA64MMFR2_EL1={:#x};", value);
+        }
+    }
+
+
+    unsafe {
+        let mut value: u64 = 0;
+        asm!("mrs {}, ID_AA64PFR0_EL1", inout(reg) value);
+        if value != 0 {
+            print!("ID_AA64PFR0_EL1={:#x};", value);
+        }
+    }
+
+    unsafe {
+        let mut value: u64 = 0;
+        let addr : u64;
+        asm!(
+            "mrs {a}, ID_AA64PFR1_EL1", 
+            "adr {b}, 0",
+            a = inout(reg) value,
+            b = out(reg) addr
+        );
+        if processor::get_elr() != addr {
+            if value != 0 {
+                print!("ID_AA64PFR1_EL1={:#x};", value);
+            }
+        }
+    }
+
+    unsafe {
+        let mut value: u64 = 0;
+        asm!("mrs {}, ID_AFR0_EL1", inout(reg) value);
+        if value != 0 {
+            print!("ID_AFR0_EL1={:#x};", value);
+        }
+    }
+
+    unsafe {
+        let mut value: u64 = 0;
+        asm!("mrs {}, ID_DFR0_EL1", inout(reg) value);
+        if value != 0 {
+            print!("ID_DFR0_EL1={:#x};", value);
+        }
+    }
+
+    unsafe {
+        let mut value: u64 = 0;
+        asm!("mrs {}, ID_ISAR0_EL1", inout(reg) value);
+        if value != 0 {
+            print!("ID_ISAR0_EL1={:#x};", value);
+        }
+    }
+
+    unsafe {
+        let mut value: u64 = 0;
+        asm!("mrs {}, ID_ISAR1_EL1", inout(reg) value);
+        if value != 0 {
+            print!("ID_ISAR1_EL1={:#x};", value);
+        }
+    }
+
+    unsafe {
+        let mut value: u64 = 0;
+        asm!("mrs {}, ID_ISAR2_EL1", inout(reg) value);
+        if value != 0 {
+            print!("ID_ISAR2_EL1={:#x};", value);
+        }
+    }
+
+    unsafe {
+        let mut value: u64 = 0;
+        asm!("mrs {}, ID_ISAR3_EL1", inout(reg) value);
+        if value != 0 {
+            print!("ID_ISAR3_EL1={:#x};", value);
+        }
+    }
+
+    unsafe {
+        let mut value: u64 = 0;
+        asm!("mrs {}, ID_ISAR4_EL1", inout(reg) value);
+        if value != 0 {
+            print!("ID_ISAR4_EL1={:#x};", value);
+        }
+    }
+
+    unsafe {
+        let mut value: u64 = 0;
+        asm!("mrs {}, ID_ISAR5_EL1", inout(reg) value);
+        if value != 0 {
+            print!("ID_ISAR5_EL1={:#x};", value);
+        }
+    }
+
+
+    unsafe {
+        let mut value: u64 = 0;
+        asm!("mrs {}, ID_MMFR0_EL1", inout(reg) value);
+        if value != 0 {
+            print!("ID_MMFR0_EL1={:#x};", value);
+        }
+    }
+
+    unsafe {
+        let mut value: u64 = 0;
+        asm!("mrs {}, ID_MMFR1_EL1", inout(reg) value);
+        if value != 0 {
+            print!("ID_MMFR1_EL1={:#x};", value);
+        }
+    }
+
+    unsafe {
+        let mut value: u64 = 0;
+        asm!("mrs {}, ID_MMFR2_EL1", inout(reg) value);
+        if value != 0 {
+            print!("ID_MMFR2_EL1={:#x};", value);
+        }
+    }
+
+    unsafe {
+        let mut value: u64 = 0;
+        asm!("mrs {}, ID_MMFR3_EL1", inout(reg) value);
+        if value != 0 {
+            print!("ID_MMFR3_EL1={:#x};", value);
+        }
+    }
+
+    unsafe {
+        let mut value: u64 = 0;
+        asm!("mrs {}, ID_MMFR4_EL1", inout(reg) value);
+        if value != 0 {
+            print!("ID_MMFR4_EL1={:#x};", value);
+        }
+    }
+
+    unsafe {
+        let mut value: u64 = 0;
+        asm!("mrs {}, ID_MMFR5_EL1", inout(reg) value);
+        if value != 0 {
+            print!("ID_MMFR5_EL1={:#x};", value);
+        }
+    }
+
+    unsafe {
+        let mut value: u64 = 0;
+        asm!("mrs {}, ID_PFR0_EL1", inout(reg) value);
+        if value != 0 {
+            print!("ID_PFR0_EL1={:#x};", value);
+        }
+    }
+
+    unsafe {
+        let mut value: u64 = 0;
+        asm!("mrs {}, ID_PFR1_EL1", inout(reg) value);
+        if value != 0 {
+            print!("ID_PFR1_EL1={:#x};", value);
+        }
+    }
+/*
+    unsafe {
+        let mut value: u64 = 0;
+        asm!("mrs {}, MVFR0_EL1", inout(reg) value);
+        if value != 0 {
+            print!("MVFR0_EL1={:#x};", value);
+        }
+    }
+
+    unsafe {
+        let mut value: u64 = 0;
+        asm!("mrs {}, MVFR1_EL1", inout(reg) value);
+        if value != 0 {
+            print!("MVFR1_EL1={:#x};", value);
+        }
+    }
+
+    unsafe {
+        let mut value: u64 = 0;
+        asm!("mrs {}, MVFR2_EL1", inout(reg) value);
+        if value != 0 {
+            print!("MVFR2_EL1={:#x};", value);
+        }
+    }
+
+    unsafe {
+        let mut value: u64 = 0;
+        asm!("mrs {}, PMCEID0_EL0", inout(reg) value);
+        if value != 0 {
+            print!("PMCEID0_EL0={:#x};", value);
+        }
+    }
+
+    unsafe {
+        let mut value: u64 = 0;
+        asm!("mrs {}, PMCEID1_EL0", inout(reg) value);
+        if value != 0 {
+            print!("PMCEID1_EL0={:#x};", value);
+        }
+    }
+
+    unsafe {
+        let mut value: u64 = 0;
+        asm!("mrs {}, PMCR_EL0", inout(reg) value);
+        if value != 0 {
+            print!("PMCR_EL0={:#x};", value);
+        }
+    }
+
+  
+    unsafe {
+        let mut value: u64 = 0;
+        let addr : u64;
+        asm!(
+            "mrs {a}, TPIDR_EL3", 
+            "adr {b}, 0",
+            a = inout(reg) value,
+            b = out(reg) addr
+        );
+        if processor::get_elr() != addr {
+            if value != 0 {
+                print!("TPIDR_EL3={:#x};", value);
+            }
+        }
+    }
+
+    unsafe {
+        let mut value: u64 = 0;
+        let addr : u64;
+        asm!(
+            "mrs {a}, VMPIDR_EL2", 
+            "adr {b}, 0",
+            a = inout(reg) value,
+            b = out(reg) addr
+        );
+        if processor::get_elr() != addr {
+            if value != 0 {
+                print!("VMPIDR_EL2={:#x};", value);
+            }
+        }
+    }
+
+    unsafe {
+        let mut value: u64 = 0;
+        let addr : u64;
+        asm!(
+            "mrs {a}, VPIDR_EL2", 
+            "adr {b}, 0",
+            a = inout(reg) value,
+            b = out(reg) addr
+        );
+        if processor::get_elr() != addr {
+            if value != 0 {
+                print!("VPIDR_EL2={:#x};", value);
+            }
+        }
+    }
+
+*/
+
+    println!("\x08 ||hostcpu#cluster=P'");
+
+}
 
 pub fn run(_platform:&Box<dyn PlatformOperations>) -> i64 {
 
@@ -642,495 +1061,7 @@ pub fn run(_platform:&Box<dyn PlatformOperations>) -> i64 {
 
     }
 
-    println!("\nboard_t board = {{");
-    println!("    .name = \"\",");
-    println!("    .description = \"\",");
-    println!("    .reset_regs = {{");
-
-    unsafe {
-        let mut value: u64 = 0;
-        asm!("mrs {}, VBAR_EL1", inout(reg) value);
-        asm!("msr VBAR_EL1, {}", inout(reg) value);
-        if value != 0 {
-            println!("        {{AARCH64_VBAR_EL1, {:#x}}},", value);
-        }
-    }
-
-    unsafe {
-        let mut value: u64 = 0;
-        asm!("mrs {}, SCTLR_EL1", inout(reg) value);
-        asm!("msr SCTLR_EL1, {}", inout(reg) value);
-        if value != 0 {
-            println!("        {{AARCH64_SCTLR_EL1, {:#x}}},", value);
-        }
-    }
-
-
-    unsafe {
-        let mut value: u64 = 0;
-        asm!("mrs {}, VBAR_EL2", inout(reg) value);
-        if value != 0 {
-            println!("        {{AARCH64_VBAR_EL2, {:#x}}},", value);
-        }
-    }
-
-    unsafe {
-        let mut value: u64 = 0;
-        asm!("mrs {}, RVBAR_EL1", inout(reg) value);
-        if value != 0 {
-            println!("        {{AARCH64_RVBAR_EL1, {:#x}}},", value);
-        }
-    }
-
-    unsafe {
-        let mut value: u64 = 0;
-        asm!(
-            "mrs {a}, RVBAR_EL2", 
-            a = inout(reg) value
-        );
-        if value != 0 {
-            println!("        {{AARCH64_RVBAR_EL2, {:#x}}},", value);
-        }
-        else {
-            println!("        // could not access RVBAR_EL2");
-        }
-    }
-
-    unsafe {
-        let mut value: u64 = 0;
-        asm!("mrs {}, CCSIDR_EL1", inout(reg) value);
-        if value != 0 {
-            println!("        {{AARCH64_CCSIDR_EL1, {:#x}}},", value);
-        }
-    }
-
-    unsafe {
-        let mut value: u64 = 0;
-        asm!("mrs {}, CLIDR_EL1", inout(reg) value);
-        if value != 0 {
-            println!("        {{AARCH64_CLIDR_EL1, {:#x}}},", value);
-        }
-    }
-
-    unsafe {
-        let mut value: u64 = 0;
-        asm!("mrs {}, CTR_EL0", inout(reg) value);
-        if value != 0 {
-            println!("        {{AARCH64_CTR_EL0, {:#x}}},", value);
-        }
-    }
-
-    unsafe {
-        let mut value: u64 = 0;
-        asm!("mrs {}, ID_AA64AFR0_EL1", inout(reg) value);
-        if value != 0 {
-            println!("        {{AARCH64_ID_AA64AFR0_EL1, {:#x}}},", value);
-        }
-    }
-
-    unsafe {
-        let mut value: u64 = 0;
-        asm!("mrs {}, ID_AA64AFR1_EL1", inout(reg) value);
-        if value != 0 {
-            println!("        {{AARCH64_ID_AA64AFR1_EL1, {:#x}}},", value);
-        }
-    }
-
-    unsafe {
-        let mut value: u64 = 0;
-        asm!("mrs {}, ID_AA64DFR0_EL1", inout(reg) value);
-        if value != 0 {
-            println!("        {{AARCH64_ID_AA64DFR0_EL1, {:#x}}},", value);
-        }
-    }
-
-    unsafe {
-        let mut value: u64 = 0;
-        asm!("mrs {}, ID_AA64DFR1_EL1", inout(reg) value);
-        if value != 0 {
-            println!("        {{AARCH64_ID_AA64DFR1_EL1, {:#x}}},", value);
-        }
-    }
-
-    unsafe {
-        let mut value: u64 = 0;
-        asm!("mrs {}, ID_AA64ISAR0_EL1", inout(reg) value);
-        if value != 0 {
-            println!("        {{AARCH64_ID_AA64ISAR0_EL1, {:#x}}},", value);
-        }
-    }
-
-    unsafe {
-        let mut value: u64 = 0;
-        asm!("mrs {}, ID_AA64ISAR1_EL1", inout(reg) value);
-        if value != 0 {
-            println!("        {{AARCH64_ID_AA64ISAR1_EL1, {:#x}}},", value);
-        }
-    }
-
-    unsafe {
-        let mut value: u64 = 0;
-        asm!("mrs {}, ID_AA64ISAR2_EL1", inout(reg) value);
-        if value != 0 {
-            println!("        {{AARCH64_ID_AA64ISAR2_EL1, {:#x}}},", value);
-        }
-    }
-
-    unsafe {
-        let mut value: u64 = 0;
-        asm!("mrs {}, ID_AA64MMFR0_EL1", inout(reg) value);
-        if value != 0 {
-            println!("        {{AARCH64_ID_AA64MMFR0_EL1, {:#x}}},", value);
-        }
-    }
-
-    unsafe {
-        let mut value: u64 = 0;
-        asm!("mrs {}, ID_AA64MMFR1_EL1", inout(reg) value);
-        if value != 0 {
-            println!("        {{AARCH64_ID_AA64MMFR1_EL1, {:#x}}},", value);
-        }
-    }
-
-    unsafe {
-        let mut value: u64 = 0;
-        asm!("mrs {}, ID_AA64MMFR2_EL1", inout(reg) value);
-        if value != 0 {
-            println!("        {{AARCH64_ID_AA64MMFR2_EL1, {:#x}}},", value);
-        }
-    }
-
-
-    unsafe {
-        let mut value: u64 = 0;
-        asm!("mrs {}, ID_AA64PFR0_EL1", inout(reg) value);
-        if value != 0 {
-            println!("        {{AARCH64_ID_AA64PFR0_EL1, {:#x}}},", value);
-        }
-    }
-
-    unsafe {
-        let mut value: u64 = 0;
-        let addr : u64;
-        asm!(
-            "mrs {a}, ID_AA64PFR1_EL1", 
-            "adr {b}, 0",
-            a = inout(reg) value,
-            b = out(reg) addr
-        );
-        if processor::get_elr() != addr {
-            if value != 0 {
-                println!("        {{AARCH64_ID_AA64PFR1_EL1, {:#x}}},", value);
-            }
-        }
-        else {
-            println!("        // could not access ID_AA64PFR1_EL1");
-        }
-    }
-
-    unsafe {
-        let mut value: u64 = 0;
-        asm!("mrs {}, ID_AFR0_EL1", inout(reg) value);
-        if value != 0 {
-            println!("        {{AARCH64_ID_AFR0_EL1, {:#x}}},", value);
-        }
-    }
-
-    unsafe {
-        let mut value: u64 = 0;
-        asm!("mrs {}, ID_DFR0_EL1", inout(reg) value);
-        if value != 0 {
-            println!("        {{AARCH64_ID_DFR0_EL1, {:#x}}},", value);
-        }
-    }
-
-    unsafe {
-        let mut value: u64 = 0;
-        asm!("mrs {}, ID_ISAR0_EL1", inout(reg) value);
-        if value != 0 {
-            println!("        {{AARCH64_ID_ISAR0_EL1, {:#x}}},", value);
-        }
-    }
-
-    unsafe {
-        let mut value: u64 = 0;
-        asm!("mrs {}, ID_ISAR1_EL1", inout(reg) value);
-        if value != 0 {
-            println!("        {{AARCH64_ID_ISAR1_EL1, {:#x}}},", value);
-        }
-    }
-
-    unsafe {
-        let mut value: u64 = 0;
-        asm!("mrs {}, ID_ISAR2_EL1", inout(reg) value);
-        if value != 0 {
-            println!("        {{AARCH64_ID_ISAR2_EL1, {:#x}}},", value);
-        }
-    }
-
-    unsafe {
-        let mut value: u64 = 0;
-        asm!("mrs {}, ID_ISAR3_EL1", inout(reg) value);
-        if value != 0 {
-            println!("        {{AARCH64_ID_ISAR3_EL1, {:#x}}},", value);
-        }
-    }
-
-    unsafe {
-        let mut value: u64 = 0;
-        asm!("mrs {}, ID_ISAR4_EL1", inout(reg) value);
-        if value != 0 {
-            println!("        {{AARCH64_ID_ISAR4_EL1, {:#x}}},", value);
-        }
-    }
-
-    unsafe {
-        let mut value: u64 = 0;
-        asm!("mrs {}, ID_ISAR5_EL1", inout(reg) value);
-        if value != 0 {
-            println!("        {{AARCH64_ID_ISAR5_EL1, {:#x}}},", value);
-        }
-    }
-
-
-    unsafe {
-        let mut value: u64 = 0;
-        asm!("mrs {}, ID_MMFR0_EL1", inout(reg) value);
-        if value != 0 {
-            println!("        {{AARCH64_ID_MMFR0_EL1, {:#x}}},", value);
-        }
-    }
-
-    unsafe {
-        let mut value: u64 = 0;
-        asm!("mrs {}, ID_MMFR1_EL1", inout(reg) value);
-        if value != 0 {
-            println!("        {{AARCH64_ID_MMFR1_EL1, {:#x}}},", value);
-        }
-    }
-
-    unsafe {
-        let mut value: u64 = 0;
-        asm!("mrs {}, ID_MMFR2_EL1", inout(reg) value);
-        if value != 0 {
-            println!("        {{AARCH64_ID_MMFR2_EL1, {:#x}}},", value);
-        }
-    }
-
-    unsafe {
-        let mut value: u64 = 0;
-        asm!("mrs {}, ID_MMFR3_EL1", inout(reg) value);
-        if value != 0 {
-            println!("        {{AARCH64_ID_MMFR3_EL1, {:#x}}},", value);
-        }
-    }
-
-    unsafe {
-        let mut value: u64 = 0;
-        asm!("mrs {}, ID_MMFR4_EL1", inout(reg) value);
-        if value != 0 {
-            println!("        {{AARCH64_ID_MMFR4_EL1, {:#x}}},", value);
-        }
-    }
-
-    unsafe {
-        let mut value: u64 = 0;
-        asm!("mrs {}, ID_MMFR5_EL1", inout(reg) value);
-        if value != 0 {
-            println!("        {{AARCH64_ID_MMFR5_EL1, {:#x}}},", value);
-        }
-    }
-
-    unsafe {
-        let mut value: u64 = 0;
-        asm!("mrs {}, ID_PFR0_EL1", inout(reg) value);
-        if value != 0 {
-            println!("        {{AARCH64_ID_PFR0_EL1, {:#x}}},", value);
-        }
-    }
-
-    unsafe {
-        let mut value: u64 = 0;
-        asm!("mrs {}, ID_PFR1_EL1", inout(reg) value);
-        if value != 0 {
-            println!("        {{AARCH64_ID_PFR1_EL1, {:#x}}},", value);
-        }
-    }
-
-    unsafe {
-        let mut value: u64 = 0;
-        asm!("mrs {}, MIDR_EL1", inout(reg) value);
-        if value != 0 {
-            println!("        {{AARCH64_MIDR_EL1, {:#x}}},", value);
-        }
-    }
-
-    unsafe {
-        let mut value: u64 = 0;
-        asm!("mrs {}, MPIDR_EL1", inout(reg) value);
-        if value != 0 {
-            println!("        {{AARCH64_MPIDR_EL1, {:#x}}},", value);
-        }
-    }
-
-    unsafe {
-        let mut value: u64 = 0;
-        asm!("mrs {}, MVFR0_EL1", inout(reg) value);
-        if value != 0 {
-            println!("        {{AARCH64_MVFR0_EL1, {:#x}}},", value);
-        }
-    }
-
-    unsafe {
-        let mut value: u64 = 0;
-        asm!("mrs {}, MVFR1_EL1", inout(reg) value);
-        if value != 0 {
-            println!("        {{AARCH64_MVFR1_EL1, {:#x}}},", value);
-        }
-    }
-
-    unsafe {
-        let mut value: u64 = 0;
-        asm!("mrs {}, MVFR2_EL1", inout(reg) value);
-        if value != 0 {
-            println!("        {{AARCH64_MVFR2_EL1, {:#x}}},", value);
-        }
-    }
-
-    unsafe {
-        let mut value: u64 = 0;
-        asm!("mrs {}, PMCEID0_EL0", inout(reg) value);
-        if value != 0 {
-            println!("        {{AARCH64_PMCEID0_EL0, {:#x}}},", value);
-        }
-    }
-
-    unsafe {
-        let mut value: u64 = 0;
-        asm!("mrs {}, PMCEID1_EL0", inout(reg) value);
-        if value != 0 {
-            println!("        {{AARCH64_MCEID1_EL0, {:#x}}},", value);
-        }
-    }
-
-    unsafe {
-        let mut value: u64 = 0;
-        asm!("mrs {}, PMCR_EL0", inout(reg) value);
-        if value != 0 {
-            println!("        {{AARCH64_PMCR_EL0, {:#x}}},", value);
-        }
-    }
-
-    unsafe {
-        let mut value: u64 = 0;
-        asm!("mrs {}, REVIDR_EL1", inout(reg) value);
-        if value != 0 {
-            println!("        {{AARCH64_REVIDR_EL1, {:#x}}},", value);
-        }
-    }
-
-
-
-
-
-    unsafe {
-        let mut value: u64 = 0;
-        let addr : u64;
-        asm!(
-            "mrs {a}, RVBAR_EL3", 
-            "adr {b}, 0",
-            a = inout(reg) value,
-            b = out(reg) addr
-        );
-        if processor::get_elr() != addr {
-            if value != 0 {
-                println!("        {{AARCH64_RVBAR_EL3, {:#x}}},", value);
-            }
-        }
-        else {
-            println!("                // could not access RVBAR_EL3");
-        }
-    }
-
-    unsafe {
-        let mut value: u64 = 0;
-        let addr : u64;
-        asm!(
-            "mrs {a}, SCTLR_EL3", 
-            "adr {b}, 0",
-            a = inout(reg) value,
-            b = out(reg) addr
-        );
-        if processor::get_elr() != addr {
-            if value != 0 {
-                println!("        {{AARCH64_SCTLR_EL3, {:#x}}},", value);
-            }
-        }
-        else {
-            println!("                // could not access SCTLR_EL3");
-        }
-    }
-    
-    unsafe {
-        let mut value: u64 = 0;
-        let addr : u64;
-        asm!(
-            "mrs {a}, TPIDR_EL3", 
-            "adr {b}, 0",
-            a = inout(reg) value,
-            b = out(reg) addr
-        );
-        if processor::get_elr() != addr {
-            if value != 0 {
-                println!("        {{AARCH64_TPIDR_EL3, {:#x}}},", value);
-            }
-        }
-        else {
-            println!("                // could not access TPIDR_EL3");
-        }
-    }
-
-    unsafe {
-        let mut value: u64 = 0;
-        let addr : u64;
-        asm!(
-            "mrs {a}, VMPIDR_EL2", 
-            "adr {b}, 0",
-            a = inout(reg) value,
-            b = out(reg) addr
-        );
-        if processor::get_elr() != addr {
-            if value != 0 {
-                println!("        {{AARCH64_VMPIDR_EL2, {:#x}}},", value);
-            }
-        }
-        else {
-            println!("                // could not access VMPIDR_EL2");
-        }
-    }
-
-    unsafe {
-        let mut value: u64 = 0;
-        let addr : u64;
-        asm!(
-            "mrs {a}, VPIDR_EL2", 
-            "adr {b}, 0",
-            a = inout(reg) value,
-            b = out(reg) addr
-        );
-        if processor::get_elr() != addr {
-            if value != 0 {
-                println!("        {{AARCH64_VPIDR_EL2, {:#x}}},", value);
-            }
-        }
-        else {
-            println!("        // could not access VPIDR_EL2");
-        }
-    }
-
-    println!("    }}");
-
-    println!("}};");
+    generate_cpu_vobj();
 
     unsafe {
         // this is for EFI to properly execute run/boot time services
