@@ -8,10 +8,13 @@ use alloc::boxed::Box;
 
 use crate::PlatformOperations;
 use crate::PlatformInfo;
+use crate::drivers;
+use crate::drivers::ns16550a::NS16550Output;
 use crate::dt::DeviceTree;
 use crate::early_prints;
 
-
+use crate::log;
+use crate::println;
 #[cfg(feature = "early_print")]
 use crate::print::_early_print_s;
 
@@ -19,15 +22,16 @@ pub struct Platform<'a> {
     fdt_address:    u64,
     information:    PlatformInfo,
     _dt:            Option<Box<DeviceTree<'a>>>
-
 }
 
 impl<'a> Platform<'a>  {
 
     pub fn new(information: PlatformInfo) -> Self {
         early_prints!("Creating EL3 platform\n", 0);
-        // make sure it can work on QEMU
-        Self { fdt_address: 0x40000000, information, _dt: None } 
+        // QEMU
+        //Self { fdt_address: 0x40000000, information, _dt: None } 
+        // for TFA: https://elixir.bootlin.com/arm-trusted-firmware/v2.8.0/source/common/desc_image_load.c#L293
+        Self { fdt_address: 0, information, _dt: None } 
     }
 
 }
@@ -57,6 +61,13 @@ impl<'a> PlatformOperations<'a> for Platform<'a> {
 
     fn get_name(&self) -> &str {
         "EL3"
+    }
+
+    fn set_boot_tty(&mut self) {
+        let tty = NS16550Output::from_mmio(drivers::DESIGNWARE , 0xf051_2000,  1, 2);
+        let s = log::get_unprinted();
+        log::set_target(tty);
+        println!("{}", &s);
     }
 
 }

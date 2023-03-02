@@ -5,6 +5,8 @@
 */
 
 use alloc::boxed::Box;
+use alloc::string::String;
+use alloc::vec::Vec;
 
 pub mod el_1_2;
 pub mod el_3;
@@ -75,8 +77,10 @@ impl Platform {
         else {
             early_prints!("stdout-path is not set, trying default=serial0\n",0);
         }
-
-        devt.get_node_by_path(stdout)
+        let full_path = String::from(stdout);
+        let s = full_path.split(":");
+        let vec: Vec<&str> = s.collect();
+        devt.get_node_by_path(vec[0])
     }
 
 }

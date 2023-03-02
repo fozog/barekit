@@ -94,7 +94,7 @@ pub extern "C"  fn rrt0_entry(x0: u64, x1: u64, x2: u64, x3: u64, x4: u64, x5: u
         early_prints!("x4=%\n", x4);
         early_prints!("x5=%\n", x5);
         let exception_level = processor::get_current_el();
-        early_prints!("EL=%\n", exception_level);
+        early_prints!("EL=%\n", exception_level as u64);
         if exception_level == 3 {
             rc = RuntimeContext::BareMetalEL3;
         }

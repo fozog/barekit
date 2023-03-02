@@ -14,7 +14,7 @@ use crate::drivers::PL011Output;
 use crate::dt;
 use crate::log;
 use crate::log::Logger;
-use crate::early_prints;
+
 use crate::platforms::PlatformOperations;
 use crate::println;
 use crate::dt::DeviceTree;
@@ -28,6 +28,7 @@ use fdt_rs::error::DevTreeError;
 
 #[cfg(feature = "early_print")]
 use crate::print::_early_print_s;
+use crate::early_prints;
 
 #[cfg(feature = "early_print")]
 #[panic_handler]
@@ -95,110 +96,111 @@ pub  fn rrt1_entry(mut platform: Box<dyn PlatformOperations>) -> i64
     }
     else {
 
-    let devt: Box<DeviceTree> = Box::new(unsafe {
+        let devt: Box<DeviceTree> = Box::new(unsafe {
 
-        if fdt as usize & 3 !=0 {
-            panic!("Invalid FDT address, need to be 32bits aligned!");
-        }
+            if fdt as usize & 3 !=0 {
+                panic!("Invalid FDT address, need to be 32bits aligned!");
+            }
         
-        early_prints!("Create from raw pointer...", 0);
-        let result = DevTree::from_raw_pointer(fdt as *const u8);
-        let fdt : DevTree;
-        match result {
-            Ok(dt) => fdt =dt,
-            Err(why) => {
-                match why {
-                    DevTreeError::InvalidParameter(_p) => early_prints!("InvalidParameter\n", _p.as_ptr() as u64),
-                    DevTreeError::InvalidMagicNumber => early_prints!("InvalidMagicNumber\n", 0),
-                    DevTreeError::InvalidOffset => early_prints!("InvalidOffset\n", 0),
-                    DevTreeError::ParseError => early_prints!("ParseError\n", 0),
-                    DevTreeError::StrError(_) =>early_prints!("StrError\n", 0),
-                    DevTreeError::NotEnoughMemory => early_prints!("NotEnoughMemory\n", 0),
+            early_prints!("Create from raw pointer...", 0);
+            let result = DevTree::from_raw_pointer(fdt as *const u8);
+            let fdt : DevTree;
+            match result {
+                Ok(dt) => fdt =dt,
+                Err(why) => {
+                    match why {
+                        DevTreeError::InvalidParameter(_p) => early_prints!("InvalidParameter\n", _p.as_ptr() as u64),
+                        DevTreeError::InvalidMagicNumber => early_prints!("InvalidMagicNumber\n", 0),
+                        DevTreeError::InvalidOffset => early_prints!("InvalidOffset\n", 0),
+                        DevTreeError::ParseError => early_prints!("ParseError\n", 0),
+                        DevTreeError::StrError(_) =>early_prints!("StrError\n", 0),
+                        DevTreeError::NotEnoughMemory => early_prints!("NotEnoughMemory\n", 0),
+                    }
+                    panic!("could not wrap FDT: {:?}", result);
                 }
-                panic!("could not wrap FDT: {:?}", result);
+            }
+
+            early_prints!("\n", 0);
+            
+            let slice = SCRATCHPAD.as_mut_slice();
+            let index = DevTreeIndex::new(fdt, slice).unwrap();
+            early_prints!("index done\n", 0);
+            DeviceTree::new(fdt, index)
+        });
+
+            
+        /* should use the following memory information along with additional information from usage
+        EFI has a memorymap and baremetal should use PlatformInformation to switch from boot HEAP to full RRT HEAP */
+        
+        early_prints!("Checking memory stuff\n", 0);
+        let mem_node= devt.get_node_by_name("memory").unwrap();
+        let reg_prop = devt.get_prop_by_name(&mem_node, "reg").unwrap();
+        let reg = read_two_items(reg_prop, devt.acells, devt.scells);
+        println!("memmory:");
+        for r in reg {
+            println!("    {:#012x}-{:#012x}", r.base, r.base + r.size);
+        }
+        early_prints!("Checking memory reservations entries\n", 0);
+        println!("memory reservations:");
+        for rsv in devt.devtree.reserved_entries()
+        {
+            println!("    {:#012x}-{:#012x}", u64::from(rsv.address), u64::from(rsv.address) + u64::from(rsv.size));
+        }
+        early_prints!("Checking memreserve\n", 0);
+        let memreserve_node= devt.get_node_by_path("/").unwrap();
+        if let Some(reg_prop) = devt.get_prop_by_name(&memreserve_node, "memreserve") {
+            let memreserve = read_two_items(reg_prop, 1, 1);
+            for r in memreserve {
+                println!("    {:#012x}-{:#012x}", r.base, r.base + r.size);
             }
         }
 
-        early_prints!("\n", 0);
-        
-        let slice = SCRATCHPAD.as_mut_slice();
-        let index = DevTreeIndex::new(fdt, slice).unwrap();
-        early_prints!("index done\n", 0);
-        DeviceTree::new(fdt, index)
-    });
-
-        
-    /* should use the following memory information along with additional information from usage
-    EFI has a memorymap and baremetal should use PlatformInformation to switch from boot HEAP to full RRT HEAP */
-    
-    early_prints!("Checking memory stuff\n", 0);
-    let mem_node= devt.get_node_by_name("memory").unwrap();
-    let reg_prop = devt.get_prop_by_name(&mem_node, "reg").unwrap();
-    let reg = read_two_items(reg_prop, devt.acells, devt.scells);
-    println!("memmory:");
-    for r in reg {
-        println!("    {:#012x}-{:#012x}", r.base, r.base + r.size);
-    }
-    early_prints!("Checking memory reservations entries\n", 0);
-    println!("memory reservations:");
-    for rsv in devt.devtree.reserved_entries()
-    {
-        println!("    {:#012x}-{:#012x}", u64::from(rsv.address), u64::from(rsv.address) + u64::from(rsv.size));
-    }
-    early_prints!("Checking memreserve\n", 0);
-    let memreserve_node= devt.get_node_by_path("/").unwrap();
-    if let Some(reg_prop) = devt.get_prop_by_name(&memreserve_node, "memreserve") {
-        let memreserve = read_two_items(reg_prop, 1, 1);
-        for r in memreserve {
-            println!("    {:#012x}-{:#012x}", r.base, r.base + r.size);
+        let mut stdout_parent = "chosen";
+        if platform.is_secure() {
+            stdout_parent = "secure-chosen";
         }
-    }
+        let stdout_node= crate::Platform::get_stdout(&devt, stdout_parent);
+        let stdout = match stdout_node {
+            None => panic!("stdout-path target node not found"),
+            Some(ref c) => c
+        };
 
-    let mut stdout_parent = "chosen";
-    if platform.is_secure() {
-        stdout_parent = "secure-chosen";
-    }
-    let stdout_node= crate::Platform::get_stdout(&devt, stdout_parent);
-    let stdout = match stdout_node {
-        None => panic!("stdout-path target node not found"),
-        Some(ref c) => c
-    };
+        let _path = dt::to_path(stdout);
+        early_prints!("stdout-path from node=$\n", _path.as_ptr() as u64);
 
-    let _path = dt::to_path(stdout);
-    early_prints!("stdout-path from node=$\n", _path.as_ptr() as u64);
-
-    let compatible_prop = devt.get_prop_by_name(stdout, "compatible").unwrap();
-    let compatible_strings = compatible_prop.iter_str();
+        let compatible_prop = devt.get_prop_by_name(stdout, "compatible").unwrap();
+        let compatible_strings = compatible_prop.iter_str();
 
 
-    let mmio = devt.parse_mmio(stdout);
-    let m=&mmio[0];
-    println!("    mmio={:#012x}-{:#012x}", m.base, m.base+m.size); 
-    early_prints!("    mmio base %", m.base);
-    early_prints!(" - %\n",  m.base+m.size);
+        let mmio = devt.parse_mmio(stdout);
+        let m=&mmio[0];
+        println!("    mmio={:#012x}-{:#012x}", m.base, m.base+m.size); 
+        early_prints!("    mmio base %", m.base);
+        early_prints!(" - %\n",  m.base+m.size);
 
-    #[allow(unused_assignments)]
-    let mut tty: Option<Box<dyn Logger>> = None;
-    
+        #[allow(unused_assignments)]
+        let mut tty: Option<Box<dyn Logger>> = None;
+        
 
-    if let Some(compat) = PL011Output::is_compatible(compatible_strings.clone()) {
-        tty =  PL011Output::new(compat, m.base);
-        early_prints!("pl011 driver created\n", 0);
-    }
-    else if let Some(compat) = NS16550Output::is_compatible(compatible_strings.clone()) {
-        tty =  NS16550Output::new(compat, m.base);
-        early_prints!("ns16550 driver created\n", 0);
-    } else {
-        early_prints!("no driver found\n", 0);
-        panic!("No driver found")
-    }
-    
-    early_prints!("About to change the driver\n", 0);
-    
-    let prev = log::get_unprinted();
-    log::set_target(tty);
-    println!("{}", &prev);
-    }
+        if let Some(compat) = PL011Output::is_compatible(compatible_strings.clone()) {
+            tty =  PL011Output::new(compat, m.base);
+            early_prints!("pl011 driver created\n", 0);
+        }
+        else if let Some(compat) = NS16550Output::is_compatible(compatible_strings.clone()) {
+            tty =  NS16550Output::new( compat, m.base, &devt, &stdout);
+
+        } else {
+            early_prints!("no driver found\n", 0);
+            panic!("No driver found")
+        }
+        
+        early_prints!("About to change the driver\n", 0);
+        
+        let prev = log::get_unprinted();
+        log::set_target(tty);
+        println!("{}", &prev);
+
+    } /* fdt vs acpi */
 
     #[allow(unused_assignments)]
     let mut result : i64 = 0;

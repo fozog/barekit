@@ -24,19 +24,22 @@ pub fn _print(args: fmt::Arguments) {
 #[allow(dead_code)]
 static mut PL011_QEMU:  *mut u8 = 0x0900_0000 as *mut u8;
 #[allow(dead_code)]
-static mut NS165550_LKVM:  *mut u8 = 0x100_0000 as *mut u8;
+static mut NS16550_LKVM:  *mut u8 = 0x100_0000 as *mut u8;
 #[allow(dead_code)]
-static mut NS165550_RPI4:  *mut u32 = 0xfe21_5040 as *mut u32;
+static mut NS16550_RPI4:  *mut u32 = 0xfe21_5040 as *mut u32;
 #[allow(dead_code)]
 static mut PL011_HONEYCOMB:  *mut u32 = 0x21c_0000 as *mut u32;
 #[allow(dead_code)]
 static mut PL011_SYNQUACER:  *mut u32 = 0x2a40_0000 as *mut u32;
+#[allow(dead_code)]
+static mut NS6550_MACCHIATOBIN:  *mut u8 = 0xf051_2000 as *mut u8;
 
 #[allow(dead_code)]
 //static mut RRT0_PORT: *mut u32 = 0xfe21_5040 as *mut u32;
 //static mut RRT0_PORT: *mut u32 = 0x21c_0000 as *mut u32;
-static mut RRT0_PORT: *mut u8 = 0x0900_0000 as *mut u8;
+//static mut RRT0_PORT: *mut u8 = 0x0900_0000 as *mut u8;
 //static mut RRT0_PORT: *mut u8 = 0x100_0000 as *mut u8;
+static mut RRT0_PORT: *mut u8 = 0xf051_2000 as *mut u8;
 
 #[doc(hidden)]
 #[allow(dead_code)]
@@ -45,7 +48,7 @@ pub fn _early_putc(c: char) {
     unsafe {core::ptr::write_volatile(RRT0_PORT as *mut u32, c as u32); }
     // bad hack to avoid overloading real HW... 
     // real driver are polling for an appropriate time to send chars...
-    for _i in 0..1000 {
+    for _i in 0..50000 {
         hint::spin_loop();
     }
 }
