@@ -37,9 +37,9 @@ static mut NS6550_MACCHIATOBIN:  *mut u8 = 0xf051_2000 as *mut u8;
 #[allow(dead_code)]
 //static mut RRT0_PORT: *mut u32 = 0xfe21_5040 as *mut u32;
 //static mut RRT0_PORT: *mut u32 = 0x21c_0000 as *mut u32;
-//static mut RRT0_PORT: *mut u8 = 0x0900_0000 as *mut u8;
+static mut RRT0_PORT: *mut u8 = 0x0900_0000 as *mut u8;
 //static mut RRT0_PORT: *mut u8 = 0x100_0000 as *mut u8;
-static mut RRT0_PORT: *mut u8 = 0xf051_2000 as *mut u8;
+//static mut RRT0_PORT: *mut u8 = 0xf051_2000 as *mut u8;
 
 #[doc(hidden)]
 #[allow(dead_code)]

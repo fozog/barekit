@@ -29,9 +29,10 @@ impl<'a> Platform<'a>  {
     pub fn new(information: PlatformInfo) -> Self {
         early_prints!("Creating EL3 platform\n", 0);
         // QEMU
-        //Self { fdt_address: 0x40000000, information, _dt: None } 
+        Self { fdt_address: 0x40000000, information, _dt: None } 
+        // General case
         // for TFA: https://elixir.bootlin.com/arm-trusted-firmware/v2.8.0/source/common/desc_image_load.c#L293
-        Self { fdt_address: 0, information, _dt: None } 
+        //Self { fdt_address: 0, information, _dt: None } 
     }
 
 }
@@ -64,10 +65,12 @@ impl<'a> PlatformOperations<'a> for Platform<'a> {
     }
 
     fn set_boot_tty(&mut self) {
-        let tty = NS16550Output::from_mmio(drivers::DESIGNWARE , 0xf051_2000,  1, 2);
-        let s = log::get_unprinted();
-        log::set_target(tty);
-        println!("{}", &s);
+        if self.fdt_address == 0 {
+            let tty = NS16550Output::from_mmio(drivers::DESIGNWARE , 0xf051_2000,  1, 2);
+            let s = log::get_unprinted();
+            log::set_target(tty);
+            println!("{}", &s);
+            }
     }
 
 }
