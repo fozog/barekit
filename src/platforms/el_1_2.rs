@@ -10,9 +10,12 @@ use alloc::boxed::Box;
 use crate::PlatformOperations;
 use crate::PlatformInfo;
 use crate::dt::DeviceTree;
+use crate::drivers;
+use crate::drivers::ns16550a::NS16550Output;
 use crate::early_prints;
 
-
+use crate::log;
+use crate::println;
 #[cfg(feature = "early_print")]
 use crate::print::_early_print_s;
 
@@ -49,6 +52,15 @@ impl<'a> PlatformOperations<'a> for Platform<'a> {
 
     fn get_name(&self) -> &str {
         "EL1/2"
+    }
+
+    fn set_boot_tty(&mut self) {
+        if self.fdt_address == 0 {
+            let tty = NS16550Output::from_mmio(drivers::DESIGNWARE , 0xf051_2000,  1, 2);
+            let s = log::get_unprinted();
+            log::set_target(tty);
+            println!("{}", &s);
+            }
     }
 
 }

@@ -91,7 +91,7 @@ pub  fn rrt1_entry(mut platform: Box<dyn PlatformOperations>) -> i64
     early_prints!("FDT @%\n", fdt);
 
     if fdt == 0 {
-        early_prints!("Assume ACPI\n", 0);
+        early_prints!("Use default platform TTY as FDT is not known\n", 0);
         platform.set_boot_tty();
     }
     else {
