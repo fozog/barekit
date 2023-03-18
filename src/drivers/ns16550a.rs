@@ -33,6 +33,7 @@ pub struct NS16550Output<'a> {
 pub const BROADCOM_BCM2835 : &str = "brcm,bcm2835-aux-uart";
 pub const NS16550 : &str = "ns16550a";
 pub const DESIGNWARE : &str = "snps,dw-apb-uart";
+pub const PL011 : &str = "arm,pl011";
 
 impl NS16550Output<'_> {
 

@@ -1075,7 +1075,25 @@ pub fn print_regs(_platform:&Box<dyn PlatformOperations>) -> i64 {
 }
 
 pub fn run(_platform:&Box<dyn PlatformOperations>) -> i64 {
-    println!("Hello");
+    
+    
+    unsafe {
+        let mut start: u64 = 0;
+        asm!("mrs {}, CNTVCT_EL0", inout(reg) start);
+        for i in 1..10000000 {
+            asm!("isb");
+        }
+        let mut now: u64 = 0;
+        asm!("mrs {}, CNTVCT_EL0", inout(reg) now);
+        let mut freq: u64 = 0;
+        asm!("mrs {}, CNTFRQ_EL0", inout(reg) freq);
+        
+        println!("Start= {}", start);
+        println!("Now= {}", now);
+        println!("Lapse= {}", now - start);
+        println!("Freq= {}", freq);
+        println!("Lapse= {} ns", (now - start) * 1000000000 / freq);
+    }
     _platform.stop();
     return 0
 }

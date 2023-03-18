@@ -7,6 +7,7 @@
 use core::{fmt, sync::atomic::{AtomicU32, Ordering}, hint};
 use alloc::string::String;
 use alloc::boxed::Box;
+use crate::alloc::borrow::ToOwned;
 
 use fdt_rs::common::prop::StringPropIter;
 use fdt_rs::prelude::FallibleIterator;
@@ -35,6 +36,18 @@ impl PL011Output<'_> {
         ))
     }
 
+    pub fn from_mmio(compatible: &str, mmio_base: u64, _reg_io: u32, _reg_shift: u32) -> Option<Box<dyn Logger>> {
+        Some(Box::new(
+            unsafe {
+                let driver = PL011Output {
+                    compatible: compatible.to_owned(),
+                    data_reg: AtomicU32::from_mut(&mut *(mmio_base as *mut u32)),
+                    flag_reg: AtomicU32::from_mut(&mut *((mmio_base + 0x18) as *mut u32)),
+                };
+                driver
+            }
+        ))
+    }
     pub fn is_compatible(mut candidates: StringPropIter) -> Option<String> {
         while let Some(s) = candidates.next().unwrap() {
             if s.eq("arm,pl011") {

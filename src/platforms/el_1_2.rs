@@ -11,6 +11,7 @@ use crate::PlatformOperations;
 use crate::PlatformInfo;
 use crate::dt::DeviceTree;
 use crate::drivers;
+use crate::drivers::pl011::PL011Output;
 use crate::drivers::ns16550a::NS16550Output;
 use crate::early_prints;
 
@@ -57,6 +58,7 @@ impl<'a> PlatformOperations<'a> for Platform<'a> {
     fn set_boot_tty(&mut self) {
         if self.fdt_address == 0 {
             let tty = NS16550Output::from_mmio(drivers::DESIGNWARE , 0xf051_2000,  1, 2);
+            //let tty = PL011Output::from_mmio(drivers::PL011 , 0x0900_0000,  0, 0);
             let s = log::get_unprinted();
             log::set_target(tty);
             println!("{}", &s);
