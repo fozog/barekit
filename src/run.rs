@@ -913,7 +913,7 @@ fn generate_cpu_vobj() {
 
 }
 
-pub fn run(_platform:&Box<dyn PlatformOperations>) -> i64 {
+pub fn print_regs(_platform:&Box<dyn PlatformOperations>) -> i64 {
 
     let  current_el = processor::get_current_el();
 
@@ -1072,4 +1072,10 @@ pub fn run(_platform:&Box<dyn PlatformOperations>) -> i64 {
     }
     _platform.park();
     return 0;
+}
+
+pub fn run(_platform:&Box<dyn PlatformOperations>) -> i64 {
+    println!("Hello");
+    _platform.stop();
+    return 0
 }

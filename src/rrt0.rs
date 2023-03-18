@@ -99,7 +99,7 @@ pub extern "C"  fn rrt0_entry(x0: u64, x1: u64, x2: u64, x3: u64, x4: u64, x5: u
             rc = RuntimeContext::BareMetalEL3;
         }
         else if exception_level == 2 {
-            if x1 != 0 {
+            if x1 != 0 && x0 != 0 {
                 rc = RuntimeContext::EFI;
             }
             else {
@@ -109,9 +109,11 @@ pub extern "C"  fn rrt0_entry(x0: u64, x1: u64, x2: u64, x3: u64, x4: u64, x5: u
         else {
             if x1 == 0xF1F0 {
                 rc = RuntimeContext::BaremetalSEL1
-            } else if x1 !=0 {
+            } else if x1 !=0 && x0 != 0 {
                 rc = RuntimeContext::EFI
-            } 
+            } else {
+                rc = RuntimeContext::BareMetalEL1
+            }
         }
 
         if rc != RuntimeContext::EFI {
