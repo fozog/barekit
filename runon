@@ -54,18 +54,25 @@ stage_el3_flash() {
 case $TARGET in
 
 kvmtool)
-	if [ "$ENTER_DEBUG" -eq "1" ]; then
+	if [ "$ENTER_DEBUG" == "1" ]; then
 		DEBUG_TAG="--debug-single-step"
 	fi
-	$LKVM/lkvm run --mem 64 -c 1 --console serial --kernel $APP --params "$PARAMS" $DEBUG_TAG --enable-raw
+	$LKVM/lkvm run --mem 64 -c 1 --pmu --console serial --kernel $APP --params "$PARAMS" $DEBUG_TAG
+;;
+
+kvmtool-raw)
+	if [ "$ENTER_DEBUG" == "1" ]; then
+		DEBUG_TAG="--debug-single-step"
+	fi
+	$LKVM/lkvm run --mem 64 -c 1 --pmu --console serial --kernel $APP --params "$PARAMS" $DEBUG_TAG --enable-raw 
 ;;
 
 qemu-kvm)
-	${QEMU}qemu-system-aarch64 -nographic  -machine virt,accel=kvm -cpu host -serial mon:stdio -m 16M -kernel $APP -append "$PARAMS"
+	${QEMU}qemu-system-aarch64 -nographic  -machine virt,accel=kvm -cpu host -serial mon:stdio -m 64M -kernel $APP -append "$PARAMS"
 ;;
 
 qemu)
-	${QEMU}qemu-system-aarch64 -nographic  -machine virt -cpu cortex-a72 -serial mon:stdio -m 16M -kernel $APP -append "$PARAMS"
+	${QEMU}qemu-system-aarch64 -nographic  -machine virt -cpu cortex-a72 -serial mon:stdio -m 64M -kernel $APP -append "$PARAMS"
 ;;
 
 qemu-edk2)

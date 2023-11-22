@@ -37,8 +37,8 @@ static mut NS6550_MACCHIATOBIN:  *mut u8 = 0xf051_2000 as *mut u8;
 #[allow(dead_code)]
 //static mut RRT0_PORT: *mut u32 = 0xfe21_5040 as *mut u32;
 //static mut RRT0_PORT: *mut u32 = 0x21c_0000 as *mut u32;
-static mut RRT0_PORT: *mut u8 = 0x0900_0000 as *mut u8;
-//static mut RRT0_PORT: *mut u8 = 0x100_0000 as *mut u8;
+//static mut RRT0_PORT: *mut u8 = 0x0900_0000 as *mut u8;
+static mut RRT0_PORT: *mut u8 = 0x100_0000 as *mut u8;
 //static mut RRT0_PORT: *mut u8 = 0xf051_2000 as *mut u8;
 
 #[doc(hidden)]
@@ -48,7 +48,7 @@ pub fn _early_putc(c: char) {
     unsafe {core::ptr::write_volatile(RRT0_PORT as *mut u32, c as u32); }
     // bad hack to avoid overloading real HW... 
     // real driver are polling for an appropriate time to send chars...
-    for _i in 0..50000 {
+    for _i in 0..500 {
         hint::spin_loop();
     }
 }

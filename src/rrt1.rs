@@ -199,7 +199,6 @@ pub  fn rrt1_entry(mut platform: Box<dyn PlatformOperations>) -> i64
         let prev = log::get_unprinted();
         log::set_target(tty);
         println!("{}", &prev);
-
     } /* fdt vs acpi */
 
     #[allow(unused_assignments)]

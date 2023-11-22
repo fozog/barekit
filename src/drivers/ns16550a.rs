@@ -33,7 +33,6 @@ pub struct NS16550Output<'a> {
 pub const BROADCOM_BCM2835 : &str = "brcm,bcm2835-aux-uart";
 pub const NS16550 : &str = "ns16550a";
 pub const DESIGNWARE : &str = "snps,dw-apb-uart";
-pub const PL011 : &str = "arm,pl011";
 
 impl NS16550Output<'_> {
 
@@ -41,9 +40,9 @@ impl NS16550Output<'_> {
         Some(Box::new(
             unsafe {
                 let mut reg_io: u32 = 1;
-                let mut reg_shift: u32 = 1;
+                let mut reg_shift: u32 = 0;
                 if compatible.eq_ignore_ascii_case(BROADCOM_BCM2835) {
-                    reg_shift = 4;
+                    reg_shift = 2;
                 } else if compatible.eq_ignore_ascii_case(DESIGNWARE) {
                     let reg_io_prop = devt.get_prop_by_name(&node, "reg-io-width").unwrap();
                     reg_io = reg_io_prop.u32(0).unwrap();
