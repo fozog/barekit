@@ -1,1 +1,7 @@
 /target
+Cargo.lock
+barekit.mapsym
+.gitignore
+run_efi/
+barekit.map
+.DS_Store
