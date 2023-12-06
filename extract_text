@@ -1,5 +1,7 @@
 #! /bin/bash
 
+OBJDUMP=/opt/homebrew/opt/llvm/bin/llvm-objdump
+
 FILE=$1
 TARGET=$2
 
@@ -7,9 +9,14 @@ MACHINE=$(uname -s)
 
 if [ "$MACHINE" == "Darwin" ]; then 
 
-OFFSET=$(objdump  -p $FILE | grep fileoff | cut -c11-)
-SIZE=$(objdump  -p $FILE | grep filesize | cut -c11-)
-dd if=$FILE of=$TARGET bs=1 skip=$OFFSET count=$SIZE > /dev/null 2>&1
+echo handling on Darwin
+OFFSET=$($OBJDUMP  -p $FILE | grep fileoff | cut -c11-)
+SIZE=$($OBJDUMP  -p $FILE | grep filesize | cut -c11-)
+#set $(LANG=C objdump -h $FILE | grep .text)
+#OFFSET=$(printf "%d" 0x$6)
+#SIZE=$(printf "%d" 0x$3)
+echo dd if=$FILE of=$TARGET bs=1 skip=$OFFSET count=$SIZE 
+dd if=$FILE of=$TARGET bs=1 skip=$OFFSET count=$SIZE 
 
 else
 

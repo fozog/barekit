@@ -1,5 +1,9 @@
 MAPFILE=$1
 
+if [ ! -e $MAPFILE ]; then
+	exit 0
+fi
+
 DEMANGLE=../demangle/target/debug/demangle
 if [ ! -e $DEMANGLE ]; then
 	echo "Map not generated due to lack of $DEMANGLE"

@@ -1,0 +1,35 @@
+#!/bin/bash
+
+FLASH=$1
+SECMEM_BASE=$2
+set $(egrep  ^NATURE Makefile)
+NATURE=$3
+
+APP=target/aarch64-unknown-uefi/$NATURE/barekit.afx
+EL3_STUB=target/aarch64-unknown-uefi/copy_to_secmem.bin
+
+
+# the flash is made of a stub at offset and a payload at offset 4096
+# the stub copies the payload at $SECMEM_BASE (writeen in the flash)
+# then transfers control to it
+# this is necessary because it may not be easy with Qemu to position 
+# the payload directly in secmem (required for EL3 run)
+
+truncate -s 64M $FLASH
+# update size of payload in the stub
+PAYLOAD_SIZE_OFFSET=$(objdump -t target/aarch64-unknown-uefi/copy_to_secmem.elf | grep payload_size | cut -d" " -f 1)
+PAYLOAD_SIZE_OFFSET=$(printf "%d" 0x$PAYLOAD_SIZE_OFFSET)
+echo PAYLOAD_SIZE_OFFSET=$PAYLOAD_SIZE_OFFSET
+((PAYLOAD_BASE_OFFSET = $PAYLOAD_SIZE_OFFSET + 4))
+echo PAYLOAD_BASE_OFFSET = $PAYLOAD_BASE_OFFSET
+set $(wc -c $APP)
+v=$(printf "%08x" $1)
+echo -n -e "\\x${v:6:2}\\x${v:4:2}\\x${v:2:2}\\x${v:0:2}" | dd of=target/aarch64-unknown-uefi/copy_to_secmem.bin bs=1 seek=$PAYLOAD_SIZE_OFFSET conv=notrunc > /dev/null 2>&1
+#update the secure memory base address in the stub
+v=$(printf "%016x" $SECMEM_BASE)
+echo -n -e "\\x${v:14:2}\\x${v:12:2}\\x${v:10:2}\\x${v:8:2}\\x${v:6:2}\\x${v:4:2}\\x${v:2:2}\\x${v:0:2}" | dd of=target/aarch64-unknown-uefi/copy_to_secmem.bin bs=1 seek=$PAYLOAD_BASE_OFFSET conv=notrunc > /dev/null 2>&1
+#place the stub at the begining of the flash
+dd if=$EL3_STUB of=$FLASH bs=4096 conv=notrunc > /dev/null  2>&1
+#place the payload at offset 4096
+dd if=$APP of=$FLASH seek=1 bs=4096 conv=notrunc > /dev/null 2>&1
+ 

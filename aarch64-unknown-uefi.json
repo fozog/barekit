@@ -2,7 +2,7 @@
   "abi-return-struct-as-int": true,
   "allows-weak-linkage": false,
   "arch": "aarch64",
-  "features" : "+strict-align,-neon,-fp-armv8",
+  "features" : "+strict-align,-neon,-fp-armv8,+v8.1a",
   "relocation-model": "pie",
   "data-layout": "e-m:w-p:64:64-i32:32-i64:64-i128:128-n32:64-S128",
   "debuginfo-kind": "pdb",
@@ -23,15 +23,14 @@
   "pre-link-args": {
     "lld-link": [
       "/NOLOGO",
+      "/map:barekit.map",
       "/entry:entry",
       "/subsystem:efi_application",
       "/machine:arm64",
       "/filealign:4096",
       "/base:0",
-      "/map:barekit.map",
-      "/stack:16384",
-      "/heap:16384",
-      "/demangle"
+      "/stack:8192",
+      "/heap:4096"
     ]
   },
   "singlethread": true,
