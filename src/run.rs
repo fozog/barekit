@@ -7,6 +7,7 @@
 use alloc::boxed::Box;
 use core::arch::asm;
 use core::arch::global_asm;
+use extendhash::sha256;
 
 use crate::PlatformOperations;
 
@@ -913,11 +914,11 @@ fn generate_cpu_vobj() {
 
 }
 
-pub fn print_regs(_platform:&Box<dyn PlatformOperations>) -> i64 {
+pub fn print_regs(platform:&Box<dyn PlatformOperations>) -> i64 {
 
     let  current_el = processor::get_current_el();
 
-    println!("ID registers at startup EL-{}\n", current_el);
+    println!("FFo= ID registers at startup EL-{}\n", current_el);
 
     let  barekit_vbar : u64;
 
@@ -1070,18 +1071,57 @@ pub fn print_regs(_platform:&Box<dyn PlatformOperations>) -> i64 {
             processor::set_vbar(PREVIOUS_VBAR);
         }
     }
-    _platform.park();
+    platform.park();
     return 0;
 }
 
-pub fn run(_platform:&Box<dyn PlatformOperations>) -> i64 {
-    
+pub fn cpu_burn() {
+    let mut start: u64 = 0;
     unsafe {
+        asm!("mrs {}, CNTVCT_EL0", inout(reg) start);
+
+        let mut start: u64 = 0;
+        asm!("mrs {}, CNTVCT_EL0", inout(reg) start);
+
+        let mut total: u64 = 0;
+        for i in 1..100000 {
+            let hash = sha256::compute_hash("askjhaskjhsak kjdsdjkh cdskjhf dksjhf ksdjfhksdjhf kdsjhfkdsjhf kdsjhf kdsjfh kdsjfh kdsjfh dksjfh kdslfhdskjfhlkdsjfhlqksjfh ldqskjfh lkdsqjfh ldksjfh lkdsjhfhf ksdjhf dskjhf dksjhf kdsjfh hakhjasjkashakshj".as_bytes());
+            total += (hash[0] as u64 ) * i as u64;
+        }
+
+        let mut now: u64 = 0;
+        asm!("mrs {}, CNTVCT_EL0", inout(reg) now);
+
+        let mut freq: u64 = 0;
+        asm!("mrs {}, CNTFRQ_EL0", inout(reg) freq);
+
+        println!("Total= {}", total);
+        println!("Start= {}", start);
+        println!("Now= {}", now);
+        println!("Lapse= {}", now - start);
+        println!("Freq= {}", freq);
+        println!("Lapse= {}ms (total= {})", (now - start) * 1000 / freq, total);
+    }
+
+}
+
+pub fn run(platform:&Box<dyn PlatformOperations>) -> i64 {
+    let mut start: u64 = 0;
+    unsafe {
+        
+        //asm!(".inst 0xd4224682");
+        //asm!("brk #0x1234");
+        //asm!("DCPS2");
+        asm!("mrs {}, CNTVCT_EL0", inout(reg) start);
+        asm!("msr PAN,#1");
         let mut value: u64 = 0;
         asm!("mrs {}, PMCR_EL0", inout(reg) value);
         println!("PMCR_EL0={:#x};", value);
         asm!("mrs {}, MIDR_EL1", inout(reg) value);
         println!("MIDR_EL1={:#x};", value);
     }
+    println!("Going to stop...");
+    platform.stop();
+
     return 0
 }
