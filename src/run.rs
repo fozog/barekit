@@ -494,7 +494,7 @@ fn dump_paging() {
 
 static mut PREVIOUS_VBAR: u64 = 0;
 
-
+#[allow(dead_code)]
 fn generate_cpu_vobj() {
     print!("\n");
     print!("-vobj 'CPU#name=\"\";");
@@ -914,6 +914,7 @@ fn generate_cpu_vobj() {
 
 }
 
+#[allow(dead_code)]
 pub fn print_regs(platform:&Box<dyn PlatformOperations>) -> i64 {
 
     let  current_el = processor::get_current_el();
@@ -1075,12 +1076,10 @@ pub fn print_regs(platform:&Box<dyn PlatformOperations>) -> i64 {
     return 0;
 }
 
+#[allow(dead_code)]
 pub fn cpu_burn() {
     let mut start: u64 = 0;
     unsafe {
-        asm!("mrs {}, CNTVCT_EL0", inout(reg) start);
-
-        let mut start: u64 = 0;
         asm!("mrs {}, CNTVCT_EL0", inout(reg) start);
 
         let mut total: u64 = 0;
@@ -1105,6 +1104,7 @@ pub fn cpu_burn() {
 
 }
 
+#[allow(dead_code)]
 pub fn run(platform:&Box<dyn PlatformOperations>) -> i64 {
     let mut start: u64 = 0;
     unsafe {
@@ -1112,7 +1112,9 @@ pub fn run(platform:&Box<dyn PlatformOperations>) -> i64 {
         //asm!(".inst 0xd4224682");
         //asm!("brk #0x1234");
         //asm!("DCPS2");
+        
         asm!("mrs {}, CNTVCT_EL0", inout(reg) start);
+        println!("CNTVCT_EL0={:#x};", start);
         asm!("msr PAN,#1");
         let mut value: u64 = 0;
         asm!("mrs {}, PMCR_EL0", inout(reg) value);

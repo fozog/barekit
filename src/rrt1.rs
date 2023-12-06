@@ -155,7 +155,7 @@ pub  fn rrt1_entry(mut platform: Box<dyn PlatformOperations>) -> i64
             }
         }
 
-        let mut stdout_parent = "chosen";
+        let stdout_parent = "chosen";
         //if platform.is_secure() {
         //    stdout_parent = "secure-chosen";
         //}

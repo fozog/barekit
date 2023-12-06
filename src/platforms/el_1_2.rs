@@ -11,7 +11,7 @@ use crate::PlatformOperations;
 use crate::PlatformInfo;
 use crate::dt::DeviceTree;
 use crate::drivers;
-use crate::drivers::pl011::PL011Output;
+//use crate::drivers::pl011::PL011Output;
 use crate::drivers::ns16550a::NS16550Output;
 use crate::early_prints;
 

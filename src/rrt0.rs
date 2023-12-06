@@ -63,6 +63,7 @@ const BOOT_HEAP_SIZE : usize = 512*1024 ;
 
 #[export_name = "entry"]
 #[allow(const_item_mutation)]
+#[allow(unused_assignments)]
 pub extern "C"  fn rrt0_entry(x0: u64, x1: u64, x2: u64, x3: u64, x4: u64, x5: u64) -> i64 {
 
     /* this block MUST be the first things to do. you may change it if you 

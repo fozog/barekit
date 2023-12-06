@@ -8,7 +8,6 @@ use alloc::boxed::Box;
 use alloc::string::String;
 use alloc::vec::Vec;
 use core::hint;
-use core::arch::asm;
 
 pub mod el_1_2;
 pub mod el_3;
@@ -17,7 +16,6 @@ pub mod efi;
 
 use crate::RuntimeContext;
 use crate::println;
-use crate::print;
 use crate::ALLOC_SIZE;
 use crate::ALLOC_COUNT;
 use crate::early_prints;
@@ -93,7 +91,6 @@ pub trait PlatformOperations<'a> {
 
     fn pre_stop(&self) {
         unsafe {
-            //asm!("brk #1");
             println!("BumpAllocator stats: {} allocations, {} bytes.", ALLOC_COUNT, ALLOC_SIZE);
         }
     }

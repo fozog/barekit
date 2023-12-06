@@ -15,7 +15,7 @@ use fdt_rs::prelude::FallibleIterator;
 use crate::log::TTY;
 use crate::log::Logger;
 
-
+#[allow(dead_code)]
 pub const PL011 : &str = "arm,pl011";
 
 pub struct PL011Output<'a> {
@@ -37,7 +37,7 @@ impl PL011Output<'_> {
             }
         ))
     }
-
+    #[allow(dead_code)]
     pub fn from_mmio(compatible: &str, mmio_base: u64, _reg_io: u32, _reg_shift: u32) -> Option<Box<dyn Logger>> {
         Some(Box::new(
             unsafe {
