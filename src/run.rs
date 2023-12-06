@@ -1079,9 +1079,9 @@ pub fn run(_platform:&Box<dyn PlatformOperations>) -> i64 {
     unsafe {
         let mut value: u64 = 0;
         asm!("mrs {}, PMCR_EL0", inout(reg) value);
-        if value != 0 {
-            println!("PMCR_EL0={:#x};", value);
-        }
+        println!("PMCR_EL0={:#x};", value);
+        asm!("mrs {}, MIDR_EL1", inout(reg) value);
+        println!("MIDR_EL1={:#x};", value);
     }
     return 0
 }

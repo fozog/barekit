@@ -7,6 +7,8 @@
 use alloc::boxed::Box;
 use alloc::string::String;
 use alloc::vec::Vec;
+use core::hint;
+use core::arch::asm;
 
 pub mod el_1_2;
 pub mod el_3;
@@ -109,8 +111,10 @@ pub trait PlatformOperations<'a> {
     }
     
     fn park(&self) {
-        print!("Looping forever()");
-        loop{}
+        println!("Looping forever!");
+        loop{
+                hint::spin_loop();
+        }
     }
 
     fn get_name(&self) -> &str {

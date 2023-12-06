@@ -43,6 +43,9 @@ impl NS16550Output<'_> {
                 let mut reg_shift: u32 = 0;
                 if compatible.eq_ignore_ascii_case(BROADCOM_BCM2835) {
                     reg_shift = 2;
+                } else if compatible.eq_ignore_ascii_case(NS16550) {
+                    reg_shift = 0;
+                    reg_io = 1;
                 } else if compatible.eq_ignore_ascii_case(DESIGNWARE) {
                     let reg_io_prop = devt.get_prop_by_name(&node, "reg-io-width").unwrap();
                     reg_io = reg_io_prop.u32(0).unwrap();
@@ -84,6 +87,9 @@ impl NS16550Output<'_> {
     
     pub fn is_compatible(mut candidates: StringPropIter) -> Option<String> {
         while let Some(s) = candidates.next().unwrap() {
+            early_prints!("ns16550 driver checking: ", 0);
+            early_prints!(s, 0);
+            early_prints!("\n", 0);
             if s.eq(NS16550) {
                 return Some(String::from(NS16550));
             }

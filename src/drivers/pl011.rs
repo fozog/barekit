@@ -16,6 +16,8 @@ use crate::log::TTY;
 use crate::log::Logger;
 
 
+pub const PL011 : &str = "arm,pl011";
+
 pub struct PL011Output<'a> {
     pub compatible: String,
     pub data_reg : &'a mut AtomicU32,

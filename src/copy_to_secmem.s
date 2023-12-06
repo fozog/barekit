@@ -5,6 +5,8 @@
 */
 
 .text
+copy_to_secmem:
+.globl copy_to_secmem
     b       1f
 
 // update with actual barekit size

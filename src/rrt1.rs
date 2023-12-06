@@ -37,7 +37,7 @@ fn on_panic(_info: &PanicInfo) -> !
 {
     let message: Option<&core::fmt::Arguments> = _info.message();
     if let Some(location) = _info.location() {
-        early_prints!("Panic at $ ", location.file().as_ptr() as u64 );
+        early_prints!("\nPanic at $ ", location.file().as_ptr() as u64 );
         early_prints!("line %\n", location.line() as u64);    
     }
     println!("Panic!!");
@@ -156,9 +156,9 @@ pub  fn rrt1_entry(mut platform: Box<dyn PlatformOperations>) -> i64
         }
 
         let mut stdout_parent = "chosen";
-        if platform.is_secure() {
-            stdout_parent = "secure-chosen";
-        }
+        //if platform.is_secure() {
+        //    stdout_parent = "secure-chosen";
+        //}
         let stdout_node= crate::Platform::get_stdout(&devt, stdout_parent);
         let stdout = match stdout_node {
             None => panic!("stdout-path target node not found"),

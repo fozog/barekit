@@ -40,13 +40,14 @@ stage_el3_flash() {
 	# update size of payload in the stub
 	set $(wc -c $APP)
 	v=$(printf "%08x" $1)
-	echo -n -e "\\x${v:6:2}\\x${v:4:2}\\x${v:2:2}\\x${v:0:2}" | dd of=target/aarch64-unknown-uefi/copy_to_secmem.bin bs=4 seek=1 conv=notrunc > /dev/null 2>&1
+	echo -n -e "\\x${v:6:2}\\x${v:4:2}\\x${v:2:2}\\x${v:0:2}" | dd of=$EL3_STUB bs=4 seek=1 conv=notrunc > /dev/null 2>&1
 	#update the secure memory base address in the stub
 	v=$(printf "%016x" $SECMEM_BASE)
-	echo -n -e "\\x${v:14:2}\\x${v:12:2}\\x${v:10:2}\\x${v:8:2}\\x${v:6:2}\\x${v:4:2}\\x${v:2:2}\\x${v:0:2}" | dd of=target/aarch64-unknown-uefi/copy_to_secmem.bin bs=8 seek=1 conv=notrunc > /dev/null 2>&1
+	echo -n -e "\\x${v:14:2}\\x${v:12:2}\\x${v:10:2}\\x${v:8:2}\\x${v:6:2}\\x${v:4:2}\\x${v:2:2}\\x${v:0:2}" | dd of=$EL3_STUB bs=8 seek=1 conv=notrunc > /dev/null 2>&1
 	#place the stub at the begining of the flash
 	dd if=$EL3_STUB of=$FLASH bs=4096 conv=notrunc > /dev/null  2>&1
 	#place the payload at offset 4096
+	echo dd if=$APP of=$FLASH seek=1 bs=4096 conv=notrunc 
 	dd if=$APP of=$FLASH seek=1 bs=4096 conv=notrunc > /dev/null 2>&1
  
 }
@@ -64,7 +65,8 @@ kvmtool-raw)
 	if [ "$ENTER_DEBUG" == "1" ]; then
 		DEBUG_TAG="--debug-single-step"
 	fi
-	$LKVM/lkvm run --mem 64 -c 1 --pmu --console serial --kernel $APP --params "$PARAMS" $DEBUG_TAG --enable-raw 
+	sudo sysctl kernel.perf_event_paranoid=-1
+	$LKVM/lkvm run --mem 64 -c 1 --pmu --console serial --kernel $APP $DEBUG_TAG --enable-raw $PARAMS
 ;;
 
 qemu-kvm)
@@ -154,6 +156,33 @@ qemu-el3)
 		-serial chardev:char0 \
 		-serial chardev:char0 \
 		-drive if=pflash,format=raw,readonly=on,file=run_efi/flash.bin
+	;;
+
+remote-emula4)
+	stage_el3_flash run_efi/flash.bin 0xe000000
+	;;
+
+#-extra-symbols 'origin=barekit;path=target/aarch64-unknown-uefi/release/barekit.afx;map=barekit.mapsym;load-base=0x1000;relocated=0x0e000000' \
+emula4-qemu)
+	stage_el3_flash run_efi/flash.bin 0xe000000
+	/home/ff/Emula4/build/Emula4 \
+		-control-dir /home/ff/barekit \
+		-platform-dir /home/ff/barekit \
+		-extra-symbols 'origin=copy-to-secmem-stub;path=target/aarch64-unknown-uefi/copy_to_secmem.elf;load-base=0' \
+		-extra-symbols 'origin=barekit;map=barekit.mapsym;load-base=0x1000;relocated=0x0e000000' \
+		-patching-triggers 'copy-to-secmem-stub:#entry,barekit:#entry' \
+		-memory-layout qemu \
+		-inject-fdt \
+		-reset-address 0 \
+		-vobj "CPU#name='A72@QEMU/0';MIDR_EL1=0x410fd083||hostcpu#cluster=P" \
+		-vobj "RAM#address=0x40000000;trampoline=true||hostmem#size=1024" \
+		-vobj "SECRAM#address=0x0e000000||hostmem#size=16" \
+		-vobj "fixed-clock#name=main_clock" \
+		-vobj "GICv3@QEMU#name=main_gic;root=true" \
+		-vobj "PL011#name=stdout-path;address=0x9000000;uartclk=main_clock;apb_pclk=main_clock;irq=spi:1@main_gic||pipe#path=/tmp/emula4-uart" \
+		-vobj "PL011#name=secure-stdout-path;address=0x9040000;uartclk=main_clock;apb_pclk=main_clock;irq=spi:2@main_gic||pipe#path=/tmp/emula4-secure-uart" \
+		-vobj "CFI#address=0x0||mapped-file#path=run_efi/flash.bin" \
+		-vobj "CFI#address=0x4000000||mapped-file#path=run_efi/AAVMF_VARS.fd"
 	;;
 
 esac
