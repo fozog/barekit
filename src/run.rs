@@ -1112,16 +1112,39 @@ pub fn run(platform:&Box<dyn PlatformOperations>) -> i64 {
         //asm!(".inst 0xd4224682");
         //asm!("brk #0x1234");
         //asm!("DCPS2");
-        
+        /*
+        MIDR_EL1=0x410fd081
+        MPIDR_EL1=0x80000000
+        ID_AA64DFR0_EL1=0x10305106
+        ID_AA64ISAR0_EL1=0x11120
+        ID_AA64MMFR0_EL1=0x1124
+        ID_AA64PFR0_EL1=0x2222
+         */
         asm!("mrs {}, CNTVCT_EL0", inout(reg) start);
         println!("CNTVCT_EL0={:#x};", start);
         asm!("msr PAN,#1");
+
         let mut value: u64 = 0;
+
         asm!("mrs {}, PMCR_EL0", inout(reg) value);
         println!("PMCR_EL0={:#x};", value);
+
         asm!("mrs {}, MIDR_EL1", inout(reg) value);
         println!("MIDR_EL1={:#x};", value);
+
+        asm!("mrs {}, ID_AA64DFR0_EL1", inout(reg) value);
+        println!("ID_AA64DFR0_EL1={:#x};", value);
+
+        asm!("mrs {}, ID_AA64ISAR0_EL1", inout(reg) value);
+        println!("ID_AA64ISAR0_EL1={:#x};", value);
+
+        asm!("mrs {}, ID_AA64MMFR0_EL1", inout(reg) value);
+        println!("ID_AA64MMFR0_EL1={:#x};", value);
+
+        asm!("mrs {}, ID_AA64PFR0_EL1", inout(reg) value);
+        println!("ID_AA64PFR0_EL1={:#x};", value);
     }
+
     println!("Going to stop...");
     platform.stop();
 
