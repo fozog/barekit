@@ -20,6 +20,13 @@ NATURE=$3
 APP=target/aarch64-unknown-uefi/$NATURE/barekit.afx
 EL3_STUB=target/aarch64-unknown-uefi/copy_to_secmem.bin
 
+OS=$(uname -s)
+if [ "$OS" == "Darwin" ]; then
+    EDK2_CODE=/opt/homebrew/share/qemu/edk2-aarch64-code.fd
+elif [ "$OS" == "Linux" ]; then
+    EDK2_CODE=/usr/share/AAVMF/AAVMF_CODE.fd
+fi
+
 
 #-kernel qemu option requires some properties from the binary file
 # in some cases, the binary has no recognizable form
@@ -91,7 +98,7 @@ qemu-edk2)
 	fi
 	#minimum of 64M to initialize the EFI subsystem
 	${QEMU}qemu-system-aarch64 -nographic -nodefaults -machine virt -cpu cortex-a72 -serial mon:stdio -m 1G \
-		-drive if=pflash,format=raw,readonly=on,file=/usr/share/AAVMF/AAVMF_CODE.fd \
+		-drive if=pflash,format=raw,readonly=on,file="$EDK2_CODE" \
 		-drive if=pflash,format=raw,file=run_efi/AAVMF_VARS.fd \
 		-drive file=run_efi/disk.img,format=raw,if=virtio
 	;;
