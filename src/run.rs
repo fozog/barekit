@@ -1122,7 +1122,8 @@ pub fn run(platform:&Box<dyn PlatformOperations>) -> i64 {
          */
         asm!("mrs {}, CNTVCT_EL0", inout(reg) start);
         println!("CNTVCT_EL0={:#x};", start);
-        asm!("msr PAN,#1");
+
+        //asm!("msr pan, #1");
 
         let mut value: u64 = 0;
 
