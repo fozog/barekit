@@ -1,0 +1,13 @@
+[target.aarch64-unknown-uefi]
+rustflags = [
+  "-Ctarget-feature=+v8.1a",
+  "-Clink-arg=/NOLOGO",
+  "-Clink-arg=/map:barekit.map",
+  "-Clink-arg=/entry:entry",
+  "-Clink-arg=/subsystem:efi_application",
+  "-Clink-arg=/machine:arm64",
+  "-Clink-arg=/filealign:4096",
+  "-Clink-arg=/base:0",
+  "-Clink-arg=/stack:8192",
+  "-Clink-arg=/heap:4096",
+]

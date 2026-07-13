@@ -1,7 +1,8 @@
 APPNAME := barekit
 NATURE := release
-#FEATURES := --features early_print
-FEATURES += --features compile-for-el3
+FEATURES := --features early_print
+#SETUP: choose exception level (default 1)
+#FEATURES += --features compile-for-el3
 
 ifeq ($(NATURE),release)
 	BUILD_TAG := --release
@@ -18,6 +19,7 @@ all:	$(BUILDDIR)/stub.exe $(BUILDDIR)/copy_to_secmem.bin $(TARGET)/$(APPNAME).af
 
 $(TARGET)/$(APPNAME).afx:	$(TARGET)/$(APPNAME).efi $(BUILDDIR)/stub.exe
 	@./replace_stub $(TARGET)/$(APPNAME).efi $(BUILDDIR)/stub.exe
+	@cp $(TARGET)/$(APPNAME).afx /private/tftpboot
 
 $(BUILDDIR)/copy_to_secmem.bin:	src/copy_to_secmem.s
 	@as src/copy_to_secmem.s -o $(BUILDDIR)/copy_to_secmem.elf
@@ -29,9 +31,9 @@ $(BUILDDIR)/stub.exe:	src/stub.s
 	@gcc src/stub.s -c -o $(BUILDDIR)/stub.o
 	@./extract_text $(BUILDDIR)/stub.o $(BUILDDIR)/stub.exe
 
-$(TARGET)/$(APPNAME).efi:	src/*.rs aarch64-unknown-uefi.json
-	@cargo xbuild $(BUILD_TAG) $(FEATURES) --target=aarch64-unknown-uefi.json 
-	@./stage_map $(APPNAME).map > $(APPNAME).mapsym
+$(TARGET)/$(APPNAME).efi:	src/*.rs
+	cargo build $(BUILD_TAG) $(FEATURES) --target=aarch64-unknown-uefi
+	./stage_map $(APPNAME).map > $(APPNAME).mapsym
 
 run_efi/flash.bin: $(TARGET)/$(APPNAME).afx 
 	@./stage_flash run_efi/flash.bin 0x0e000000

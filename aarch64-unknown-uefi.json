@@ -8,6 +8,7 @@
   "debuginfo-kind": "pdb",
   "disable-redzone": true,
   "emit-debug-gdb-scripts": false,
+  "executables": true,
   "exe-suffix": ".efi",
   "is-builtin": false,
   "is-like-msvc": false,
@@ -16,7 +17,7 @@
   "linker-flavor": "lld-link",
   "linker-is-gnu": false,
   "lld-flavor": "link",
-  "llvm-target": "aarch64-unknown-windows",
+  "llvm-target": "aarch64-unknown-uefi",
   "max-atomic-width": 128,
   "os": "uefi",
   "panic-strategy": "abort",
@@ -36,7 +37,7 @@
   "singlethread": true,
   "split-debuginfo": "packed",
   "stack-probes": {
-    "kind": "call"
+    "kind": "none"
   },
   "supported-split-debuginfo": [
     "packed"
