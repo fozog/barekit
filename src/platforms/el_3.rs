@@ -9,8 +9,11 @@ use alloc::boxed::Box;
 use crate::PlatformOperations;
 use crate::PlatformInfo;
 use crate::drivers;
+
+//SETUP: choose default serial, look for SETUP to know all places to change values
 use crate::drivers::ns16550a::NS16550Output;
-//use crate::drivers::pl011::PL011Output;
+use crate::drivers::pl011::PL011Output;
+
 use crate::dt::DeviceTree;
 use crate::early_prints;
 
@@ -29,11 +32,11 @@ impl<'a> Platform<'a>  {
 
     pub fn new(information: PlatformInfo) -> Self {
         early_prints!("Creating EL3 platform\n", 0);
-        // QEMU
-        //Self { fdt_address: 0x40000000, information, _dt: None } 
+        //QEMU SSETUP: FDT location, look for SETUP to know all places to change values
+        Self { fdt_address: 0x40000000, information, _dt: None } 
         // General case
         // for TFA: https://elixir.bootlin.com/arm-trusted-firmware/v2.8.0/source/common/desc_image_load.c#L293
-        Self { fdt_address: information.x0_at_startup, information, _dt: None } 
+        //Self { fdt_address: information.x0_at_startup, information, _dt: None } 
     }
 
 }
