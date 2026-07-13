@@ -4,8 +4,7 @@
     
 */
 
-use peview::dir::{RelocationHead};
-use peview::header::{DosHeader, NtHeader, SectionHeader, FileHeader, SectionFlags};
+use crate::pe::{DosHeader, NtHeader, SectionHeader, FileHeader, SectionFlags, RelocationHead};
 
 
 /*
