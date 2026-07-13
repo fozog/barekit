@@ -32,16 +32,14 @@ use crate::early_prints;
 
 #[cfg(feature = "early_print")]
 #[panic_handler]
-#[no_mangle]
 fn on_panic(_info: &PanicInfo) -> ! 
 {
-    let message: Option<&core::fmt::Arguments> = _info.message();
     if let Some(location) = _info.location() {
         early_prints!("\nPanic at $ ", location.file().as_ptr() as u64 );
         early_prints!("line %\n", location.line() as u64);    
     }
     println!("Panic!!");
-    println!("{:?}", message);
+    println!("{:?}", _info.message());
     
     loop {
         hint::spin_loop();
@@ -53,9 +51,8 @@ fn on_panic(_info: &PanicInfo) -> !
 #[panic_handler]
 fn on_panic(_info: &PanicInfo) -> ! 
 {
-    let message: Option<&core::fmt::Arguments> = _info.message();
     println!("Panic!!");
-    println!("{:?}", message);
+    println!("{:?}", _info.message());
     
     loop {
         hint::spin_loop();
@@ -144,7 +141,8 @@ pub  fn rrt1_entry(mut platform: Box<dyn PlatformOperations>) -> i64
         println!("memory reservations:");
         for rsv in devt.devtree.reserved_entries()
         {
-            println!("    {:#012x}-{:#012x}", u64::from(rsv.address), u64::from(rsv.address) + u64::from(rsv.size));
+            let _ = rsv;
+            println!("    <reserved entry>");
         }
         early_prints!("Checking memreserve\n", 0);
         let memreserve_node= devt.get_node_by_path("/").unwrap();
