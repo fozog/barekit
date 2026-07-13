@@ -106,23 +106,30 @@ impl NS16550Output<'_> {
 
 impl fmt::Write for NS16550Output<'_> {
     fn write_str(&mut self, s: &str) -> fmt::Result {
-        for c in s.chars() {
-            if self.is_32 {
-                loop {
-                    let flags = self.flag_reg32.load(Ordering::Acquire);
-                    if flags & 1<<5 != 0 { break; }
-                    hint::spin_loop();
+        for mut c in s.chars() {
+            loop {
+                if self.is_32 {
+                    loop {
+                        let flags = self.flag_reg32.load(Ordering::Acquire);
+                        if flags & 1<<5 != 0 { break; }
+                        hint::spin_loop();
+                    }
+                    self.data_reg32.store(c as u32, Ordering::Release);
                 }
-                self.data_reg32.store(c as u32, Ordering::Release);
-            }
-            else {
-                loop {
-                    let flags = self.flag_reg.load(Ordering::Acquire);
-                    if flags & 1<<5 != 0 { break; }
-                    hint::spin_loop();
+                else {
+                    loop {
+                        let flags = self.flag_reg.load(Ordering::Acquire);
+                        if flags & 1<<5 != 0 { break; }
+                        hint::spin_loop();
+                    }
+                    self.data_reg.store(c as u8, Ordering::Release);
                 }
-                self.data_reg.store(c as u8, Ordering::Release);
-            }
+    
+                if c == '\n' 
+                    { c = '\r'; }
+                else 
+                    { break; }
+            } 
         }
         Ok(())
     }

@@ -35,10 +35,12 @@ static mut PL011_SYNQUACER:  *mut u32 = 0x2a40_0000 as *mut u32;
 static mut NS6550_MACCHIATOBIN:  *mut u8 = 0xf051_2000 as *mut u8;
 
 #[allow(dead_code)]
+//SETUP: choose default serial, look for SETUP to know all places to change values
 //static mut RRT0_PORT: *mut u32 = 0xfe21_5040 as *mut u32;
 //static mut RRT0_PORT: *mut u32 = 0x21c_0000 as *mut u32;
 //static mut RRT0_PORT: *mut u8 = 0x0900_0000 as *mut u8;
 //static mut RRT0_PORT: *mut u8 = 0x100_0000 as *mut u8;
+// Solidrun Macchiatobin
 static mut RRT0_PORT: *mut u8 = 0xf051_2000 as *mut u8;
 
 #[doc(hidden)]
@@ -48,8 +50,14 @@ pub fn _early_putc(c: char) {
     unsafe {core::ptr::write_volatile(RRT0_PORT as *mut u32, c as u32); }
     // bad hack to avoid overloading real HW... 
     // real driver are polling for an appropriate time to send chars...
-    for _i in 0..500 {
+    for _i in 0..9000 {
         hint::spin_loop();
+    }
+    if c == '\n' {
+        unsafe {core::ptr::write_volatile(RRT0_PORT as *mut u32, '\r' as u32); }
+        for _i in 0..9000 {
+            hint::spin_loop();
+        }
     }
 }
 
@@ -130,8 +138,7 @@ macro_rules! print {
 #[macro_export]
 macro_rules! println {
     () => ($crate::print!("\n"));
-    ($($arg:tt)*) => ({
-        $crate::print::_print(format_args_nl!($($arg)*));
-    })
+    ($fmt:expr) => ($crate::print!(concat!($fmt, "\n")));
+    ($fmt:expr, $($arg:tt)*) => ($crate::print!(concat!($fmt, "\n"), $($arg)*));
 }
 
