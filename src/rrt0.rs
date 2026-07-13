@@ -6,13 +6,8 @@
 
 #![no_std]
 #![no_main]
-#![feature(format_args_nl)]
-#![feature(panic_info_message)]
-#![feature(allocator_api)]
 #![feature(alloc_error_handler)]
 #![feature(atomic_from_mut)]
-#![feature(strict_provenance)]
-#![feature(exclusive_range_pattern)]
 
 extern crate alloc;
 
@@ -23,7 +18,7 @@ use alloc::boxed::Box;
 
 use r_efi::system::{ALLOCATE_ANY_PAGES, LOADER_DATA};
 use r_efi::efi::{self, PhysicalAddress};
-use peview::header::{DosHeader, NtHeader};
+use crate::pe::{DosHeader, NtHeader};
 
 use crate::drivers::TTYBuffer;
 use crate::heap::{ALLOC_SIZE, ALLOC_COUNT};
@@ -43,6 +38,7 @@ mod platforms;
 mod run;
 mod coff_stager;
 mod processor;
+mod pe;
 
 #[derive(PartialEq)]
 pub enum RuntimeContext {
@@ -193,15 +189,16 @@ pub extern "C"  fn rrt0_entry(x0: u64, x1: u64, x2: u64, x3: u64, x4: u64, x5: u
         we can use "object orientation" for clearer logic
     */
 
-    let tty_earlydev = unsafe {
-        TTYBuffer{
-            buffer: &mut TTY_BUFFER, current: 0, count:0
-        }
+    let tty_earlydev = TTYBuffer {
+        buffer: core::ptr::addr_of_mut!(TTY_BUFFER) as *mut u8,
+        capacity: 4096,
+        current: 0,
+        count: 0,
     };
 
-    early_prints!("about to set tty_earlydev, TTY_BUFFER at %...", unsafe {TTY_BUFFER.as_ptr() as u64});
+    early_prints!("about to set tty_earlydev, TTY_BUFFER at %...", core::ptr::addr_of!(TTY_BUFFER) as *const u8 as u64);
     log::set_target(Some(Box::new(tty_earlydev)));
-    early_prints!("done.\n", unsafe {TTY_BUFFER.as_ptr() as u64});
+    early_prints!("done.\n", core::ptr::addr_of!(TTY_BUFFER) as *const u8 as u64);
 
     let information = PlatformInfo { 
         image_base: load_address, 
