@@ -32,4 +32,4 @@ echo -n -e "\\x${v:14:2}\\x${v:12:2}\\x${v:10:2}\\x${v:8:2}\\x${v:6:2}\\x${v:4:2
 dd if=$EL3_STUB of=$FLASH bs=4096 conv=notrunc > /dev/null  2>&1
 #place the payload at offset 4096
 dd if=$APP of=$FLASH seek=1 bs=4096 conv=notrunc > /dev/null 2>&1
- 
+echo "Staging flash done"
