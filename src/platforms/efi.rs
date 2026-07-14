@@ -36,16 +36,23 @@ pub struct Platform<'a> {
     _image_handle:          efi::Handle,
     sys_tab:        *const efi::SystemTable,
     information:    PlatformInfo,
-    _dt:            Option<Box<DeviceTree<'a>>>
+    _dt:            Option<Box<DeviceTree<'a>>>,
+    _state:          EFI_ServicesState
 }
 
+enum EFI_ServicesState {
+    BootServicesAvailable,
+    RuntimeServicesAvailable,
+    Unknown
+}
 
 impl<'a> Platform<'a>  {
 
     pub fn new(information: PlatformInfo) -> Self {
         let sys_tab: &efi::SystemTable = unsafe { &*(information.x1_at_startup as * mut efi::SystemTable)};
         let image_handle = information.x0_at_startup  as efi::Handle;
-        Self { _image_handle: image_handle, sys_tab, information, _dt: None } 
+        let state = EFI_ServicesState::BootServicesAvailable;
+        Self { _image_handle: image_handle, sys_tab, information, _dt: None , _state: state }
     }
     
 }
@@ -79,9 +86,18 @@ impl<'a> PlatformOperations<'a> for Platform<'a> {
         &self.information
     }
 
+    fn taking_over(&self, info: u64) {
+        let st = unsafe {&*(self.sys_tab)};
+        unsafe {
+            ((*(st.boot_services)).exit_boot_services)(self._image_handle, info as usize);
+        }
+    }
+
     fn can_return(&self) -> bool {
-        // as we dont call exit boot service yet, this is always true
-        true
+        match self._state {
+            EFI_ServicesState::BootServicesAvailable => true,
+            _ => false,
+        }
     }
 
     fn set_devt(&'a mut self, devt: Option<Box<DeviceTree<'a>>>) {
@@ -92,7 +108,7 @@ impl<'a> PlatformOperations<'a> for Platform<'a> {
         "EFI"
     }
 
-    fn stop(&self) {
+    fn reset(&self) {
         let st = unsafe {&*(self.sys_tab)};
         unsafe {
             ((*(st.runtime_services)).reset_system)(RESET_COLD, Status::from_usize(0), 0, 0 as *mut core::ffi::c_void);

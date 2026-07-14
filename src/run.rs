@@ -1146,8 +1146,9 @@ pub fn run(platform:&Box<dyn PlatformOperations>) -> i64 {
         println!("ID_AA64PFR0_EL1={:#x};", value);
     }
 
-    println!("Going to stop...");
-    platform.stop();
+    println!("Exiting barekit to U-Boot...");
+    //println!("Going to stop...");
+    //platform.stop();
 
     return 0
 }

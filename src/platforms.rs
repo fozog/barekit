@@ -99,6 +99,10 @@ pub trait PlatformOperations<'a> {
 
     }
 
+    fn reset(&self) {
+
+    }
+
     fn set_boot_tty(&mut self) {
 
     }
@@ -112,6 +116,12 @@ pub trait PlatformOperations<'a> {
         loop{
                 hint::spin_loop();
         }
+    }
+
+    fn taking_over(&self, info: u64) {
+        println!("Taking over from loader!");
+        // called when the barekit based software is ready to take over from the loader 
+        // Only valid for EFI loaders such as U-Boot with bootefi or EDK2
     }
 
     fn get_name(&self) -> &str {
