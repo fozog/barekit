@@ -34,10 +34,12 @@ use crate::early_prints;
 #[panic_handler]
 fn on_panic(_info: &PanicInfo) -> ! 
 {
+    early_prints!("\nPANIC\n", 0);
     if let Some(location) = _info.location() {
         early_prints!("\nPanic at $ ", location.file().as_ptr() as u64 );
         early_prints!("line %\n", location.line() as u64);    
     }
+    // Keep println as a best-effort secondary path once a full logger is active.
     println!("Panic!!");
     println!("{:?}", _info.message());
     
@@ -58,7 +60,8 @@ fn on_panic(_info: &PanicInfo) -> !
         hint::spin_loop();
     }
 }
-static mut SCRATCHPAD: [u8; 132768] = [0; 132768];
+// Indexing large QEMU DTBs may require significantly more temporary storage.
+static mut SCRATCHPAD: [u8; 524288] = [0; 524288];
 
 #[allow(dead_code)]
 pub  fn rrt1_entry(mut platform: Box<dyn PlatformOperations>) -> i64 
@@ -117,10 +120,23 @@ pub  fn rrt1_entry(mut platform: Box<dyn PlatformOperations>) -> i64
                 }
             }
 
-            early_prints!("\n", 0);
+            early_prints!("\nDone.\n", 0);
             
             let slice = SCRATCHPAD.as_mut_slice();
-            let index = DevTreeIndex::new(fdt, slice).unwrap();
+            let index = match DevTreeIndex::new(fdt, slice) {
+                Ok(index) => index,
+                Err(why) => {
+                    match why {
+                        DevTreeError::InvalidParameter(_p) => early_prints!("Index InvalidParameter\n", _p.as_ptr() as u64),
+                        DevTreeError::InvalidMagicNumber => early_prints!("Index InvalidMagicNumber\n", 0),
+                        DevTreeError::InvalidOffset => early_prints!("Index InvalidOffset\n", 0),
+                        DevTreeError::ParseError => early_prints!("Index ParseError\n", 0),
+                        DevTreeError::StrError(_) => early_prints!("Index StrError\n", 0),
+                        DevTreeError::NotEnoughMemory => early_prints!("Index NotEnoughMemory\n", 0),
+                    }
+                    panic!("could not index FDT: {:?}", why);
+                }
+            };
             early_prints!("index done\n", 0);
             DeviceTree::new(fdt, index)
         });

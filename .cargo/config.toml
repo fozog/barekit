@@ -1,6 +1,10 @@
+[unstable]
+build-std = ["core", "alloc"]
+build-std-features = ["compiler-builtins-no-asm"]
+
 [target.aarch64-unknown-uefi]
 rustflags = [
-  "-Ctarget-feature=+v8.1a",
+  "-Ctarget-feature=+strict-align,-neon,-fp-armv8,+v8.1a",
   "-Clink-arg=/NOLOGO",
   "-Clink-arg=/map:barekit.map",
   "-Clink-arg=/entry:entry",

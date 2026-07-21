@@ -5,3 +5,4 @@ barekit.mapsym
 run_efi/
 barekit.map
 .DS_Store
+exception_table.o

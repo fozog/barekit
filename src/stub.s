@@ -107,7 +107,7 @@ ImageBase:
 //+64;
 1:
 	// when entering "raw" (i.e. baremetal, BL32 or BL33 TFA payload)
-	// the execution will start at offset 0 and continue here.
+	// the execution will start at offset 0 (load address) and continue here.
 	// x0 is set by the loading entity to FDT pointer 
 	// x1,, x2, x3 will be set by TFA or the loading entity
 	// let's make sure that
@@ -129,9 +129,14 @@ ImageBase:
     	ldr     w5, [x10, #80]         // SizeOfImage
         add     x5, x5, x4
 	// then add the SizefOfStackReserve
-        ldr     x12, [x10, #96]        // get SizefOfStackReserve
+		ldr     x12, [x10, #104]       // get SizeOfStackReserve (PE32+ OptionalHeader)
         add     sp, x5, x12
 		
+		
+		// return context is irrelevant as we are baremetal
+		// so _el_init_for_rust do not need to insert a traditional stack frame.
+		bl		_el_init_for_rust 	// ELx initialization in an EFI like manner - see baremetal_init.s
+
         br      x11
 
 	// loaded by an EFI entity, execution will start directly at the registered AddressOfEntryPoint

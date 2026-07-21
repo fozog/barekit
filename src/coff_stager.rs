@@ -138,7 +138,8 @@ pub unsafe fn relocate(load_address: usize, _upper_limit: usize) {
     // browse sections from the end to allow moving of the sections without overlapping
     for s in (0..nt_header.file_header.num_of_sections).rev() { 
         let current_section = start_of_sections + (s as usize) * core::mem::size_of::<SectionHeader>();
-        let section : &SectionHeader = &*(current_section as * const SectionHeader);
+        // Section headers may not be naturally aligned in memory, so read a local copy.
+        let section: SectionHeader = core::ptr::read_unaligned(current_section as *const SectionHeader);
         let mut move_section = false;
         if  section.characteristics & SectionFlags::Discardable as u32 == 0 {
             /*
@@ -153,7 +154,8 @@ pub unsafe fn relocate(load_address: usize, _upper_limit: usize) {
             }
         }
         else {
-            if section.name == reloc_name {
+            let section_name = section.name.as_slice();
+            if section_name == reloc_name {
                 /*
                 early_prints!("Relocation %\n", section.characteristics as u64);
                 early_prints!("    VM start %\n", section.virtual_address as u64);

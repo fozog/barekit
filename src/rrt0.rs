@@ -13,6 +13,7 @@ extern crate alloc;
 
 use core::ffi;
 use core::arch::asm;
+use core::arch::global_asm;
 
 use alloc::boxed::Box;
 
@@ -40,6 +41,13 @@ mod coff_stager;
 mod processor;
 mod pe;
 
+global_asm!(include_str!("baremetal_init.s"));
+
+unsafe extern "C" {
+    fn _install_exception_table_vbar();
+}
+
+
 #[derive(PartialEq)]
 pub enum RuntimeContext {
     BareMetalEL3,
@@ -57,10 +65,23 @@ const EFI_PAGE_MASK : u64 = 0xFFF;
 
 const BOOT_HEAP_SIZE : usize = 512*1024 ;
 
+#[unsafe(export_name = "__chkstk")]
+pub extern "C" fn chkstk_stub() {
+    // Bare-metal environment: no guard-page probing required.
+}
+
 #[export_name = "entry"]
 #[allow(const_item_mutation)]
 #[allow(unused_assignments)]
 pub extern "C"  fn rrt0_entry(x0: u64, x1: u64, x2: u64, x3: u64, x4: u64, x5: u64) -> i64 {
+
+    unsafe {
+        // disable aloignment checking otherwise even string compare can fail
+        asm!("mrs x0, SCTLR_EL1");
+        asm!("bic x0, x0, #(1 << 1)");
+        asm!("msr SCTLR_EL1, x0");
+        _install_exception_table_vbar();
+    }
 
     /* this block MUST be the first things to do. you may change it if you 
        fully undestand PE/COFF relocation stuff and the Allocator internals. */
@@ -81,6 +102,7 @@ pub extern "C"  fn rrt0_entry(x0: u64, x1: u64, x2: u64, x3: u64, x4: u64, x5: u
         //asm!("ldp x0, x1, [x2]");
     }
     */
+
     let mut rc = RuntimeContext::BareMetalEL1;
     {
         early_prints!("\n\n\n-------------------------------------------------\nrrt0_entry()\n", 0);

@@ -10,6 +10,8 @@ use core::fmt;
 
 #[cfg(feature = "early_print")]
 use core::hint;
+#[cfg(feature = "early_print")]
+use core::arch::asm;
 
 //--------------------------------------------------------------------------------------------------
 // Public Code
@@ -38,23 +40,37 @@ static mut NS6550_MACCHIATOBIN:  *mut u8 = 0xf051_2000 as *mut u8;
 //SETUP: choose default serial, look for SETUP to know all places to change values
 //static mut RRT0_PORT: *mut u32 = 0xfe21_5040 as *mut u32;
 //static mut RRT0_PORT: *mut u32 = 0x21c_0000 as *mut u32;
-//static mut RRT0_PORT: *mut u8 = 0x0900_0000 as *mut u8;
+static mut RRT0_PORT: *mut u8 = 0x0900_0000 as *mut u8;
 //static mut RRT0_PORT: *mut u8 = 0x100_0000 as *mut u8;
 // Solidrun Macchiatobin
-static mut RRT0_PORT: *mut u8 = 0xf051_2000 as *mut u8;
+//static mut RRT0_PORT: *mut u8 = 0xf051_2000 as *mut u8;
 
 #[doc(hidden)]
 #[allow(dead_code)]
 #[cfg(feature = "early_print")]
 pub fn _early_putc(c: char) {
-    unsafe {core::ptr::write_volatile(RRT0_PORT as *mut u32, c as u32); }
+    unsafe {
+        asm!(
+            "str {value:w}, [{port}]",
+            port = in(reg) (RRT0_PORT as *mut u32),
+            value = in(reg) (c as u32),
+            options(nostack, preserves_flags)
+        );
+    }
     // bad hack to avoid overloading real HW... 
     // real driver are polling for an appropriate time to send chars...
     for _i in 0..9000 {
         hint::spin_loop();
     }
     if c == '\n' {
-        unsafe {core::ptr::write_volatile(RRT0_PORT as *mut u32, '\r' as u32); }
+        unsafe {
+            asm!(
+                "str {value:w}, [{port}]",
+                port = in(reg) (RRT0_PORT as *mut u32),
+                value = in(reg) ('\r' as u32),
+                options(nostack, preserves_flags)
+            );
+        }
         for _i in 0..9000 {
             hint::spin_loop();
         }

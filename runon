@@ -17,8 +17,8 @@ LKVM=$HOME/kvmtool
 
 set $(egrep  ^NATURE Makefile)
 NATURE=$3
-APP=target/aarch64-unknown-uefi/$NATURE/barekit.afx
-EL3_STUB=target/aarch64-unknown-uefi/copy_to_secmem.bin
+APP=target/aarch64-unknown-uefi-nofp/$NATURE/barekit.afx
+EL3_STUB=target/aarch64-unknown-uefi-nofp/copy_to_secmem.bin
 
 echo $APP
 
