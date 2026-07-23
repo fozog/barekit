@@ -45,12 +45,9 @@ $(BUILDDIR)/stub.bin:	src/stub.s
 	@as -x assembler-with-cpp src/stub.s -o $(BUILDDIR)/stub.o
 	@./extract_text $(BUILDDIR)/stub.o $(BUILDDIR)/stub.bin
 
-$(TARGET)/$(APPNAME).efi:	src/*.rs $(BUILDDIR)/baremetal_init.o
+$(TARGET)/$(APPNAME).efi:	src/*.rs
 	$(CARGO_PROFILE_DEV_DEBUG) $(CARGO_PROFILE_DEV_OPT_LEVEL) $(CARGO_PROFILE_DEV_STRIP) $(CARGO_BUILD_CMD) $(BUILD_TAG) $(FEATURES) --target=aarch64-unknown-uefi-nofp.json $(CARGO_BUILD_TAIL)
 	./stage_map $(TARGET)/barekit.map > $(TARGET)/$(APPNAME).mapsym
-
-$(BUILDDIR)/baremetal_init.o: src/baremetal_init.s
-	@as -x assembler-with-cpp src/baremetal_init.s -o $(BUILDDIR)/baremetal_init.o
 
 run_efi/flash.bin: $(TARGET)/$(APPNAME).afx 
 	@./stage_flash run_efi/flash.bin 0x0e000000

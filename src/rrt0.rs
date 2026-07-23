@@ -44,6 +44,7 @@ mod pe;
 global_asm!(include_str!("baremetal_init.s"));
 
 unsafe extern "C" {
+    fn _el_init_for_rust();
     fn _install_exception_table_vbar();
 }
 
@@ -76,11 +77,8 @@ pub extern "C" fn chkstk_stub() {
 pub extern "C"  fn rrt0_entry(x0: u64, x1: u64, x2: u64, x3: u64, x4: u64, x5: u64) -> i64 {
 
     unsafe {
-        // disable aloignment checking otherwise even string compare can fail
-        asm!("mrs x0, SCTLR_EL1");
-        asm!("bic x0, x0, #(1 << 1)");
-        asm!("msr SCTLR_EL1, x0");
-        _install_exception_table_vbar();
+        _el_init_for_rust();
+        // SCTLR alignment checking is already disabled by _el_init_for_rust
     }
 
     /* this block MUST be the first things to do. you may change it if you 

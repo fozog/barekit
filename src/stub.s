@@ -135,8 +135,6 @@ ImageBase:
 		
 		// return context is irrelevant as we are baremetal
 		// so _el_init_for_rust do not need to insert a traditional stack frame.
-		bl		_el_init_for_rust 	// ELx initialization in an EFI like manner - see baremetal_init.s
-
         br      x11
 
 	// loaded by an EFI entity, execution will start directly at the registered AddressOfEntryPoint

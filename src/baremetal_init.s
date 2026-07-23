@@ -69,9 +69,9 @@ FUNC_END _install_exception_table_vbar
 FUNC_START _el_init_for_rust
 
     // just preserve the return address, don't make a stack frame as there may be issues with stack itself
-    mov x28,x29
+    mov x27,x30
     bl _install_exception_table_vbar
-    mov x29, x28
+    mov x30, x27
 
   /* ==================================================================
      * BUILD PAGE TABLES (Common for all Exception Levels)
@@ -187,12 +187,11 @@ init_el3:
     dsb     ish
     isb
 
-    /* SCTLR_EL3 */
+    /* SCTLR_EL3 - Setup but no MMU yet */
+    /* Page tables are set up, but we'll enable MMU later */
     mrs     x20, sctlr_el3
-    orr     x20, x20, #(1 << 0)  /* M: MMU */
-    orr     x20, x20, #(1 << 2)  /* C: Data Cache */
-    orr     x20, x20, #(1 << 12) /* I: Instruction Cache */
-    orr     x20, x20, #(1 << 19) /* WXN: Write-XN */
+    bic     x20, x20, #(1 << 1)  /* A: Alignment check disable */
+    /* Don't enable WXN yet - we need to execute from writable pages */
     msr     sctlr_el3, x20
     isb
     ret
@@ -221,12 +220,11 @@ init_el2:
     dsb     ish
     isb
 
-    /* SCTLR_EL2 */
+    /* SCTLR_EL2 - Setup but no MMU yet */
+    /* Page tables are set up, but we'll enable MMU later */
     mrs     x20, sctlr_el2
-    orr     x20, x20, #(1 << 0)  /* M: MMU */
-    orr     x20, x20, #(1 << 2)  /* C: Data Cache */
-    orr     x20, x20, #(1 << 12) /* I: Instruction Cache */
-    orr     x20, x20, #(1 << 19) /* WXN: Write-XN */
+    bic     x20, x20, #(1 << 1)  /* A: Alignment check disable */
+    /* Don't enable WXN yet - we need to execute from writable pages */
     msr     sctlr_el2, x20
     isb
     ret
@@ -256,12 +254,12 @@ init_el1:
     dsb     ish
     isb
 
-    /* SCTLR_EL1 */
+    /* SCTLR_EL1 - Setup but no MMU yet */
+    /* Page tables are set up but MMU not enabled yet.
+       We need to execute from writable pages, so WXN must be 0. */
     mrs     x20, sctlr_el1
-    orr     x20, x20, #(1 << 0)  /* M: MMU */
-    orr     x20, x20, #(1 << 2)  /* C: Data Cache */
-    orr     x20, x20, #(1 << 12) /* I: Instruction Cache */
-    orr     x20, x20, #(1 << 19) /* WXN: Write-XN */
+    bic     x20, x20, #(1 << 1)   /* A: Alignment check disable */
+    bic     x20, x20, #(1 << 19)  /* WXN: Allow execution on writable pages */
     msr     sctlr_el1, x20
     isb
     ret
